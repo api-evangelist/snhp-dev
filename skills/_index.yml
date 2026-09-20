@@ -1,0 +1,100 @@
+generated: '2026-09-19'
+method: generated
+source: 'No provider-published skill file exists (GitHub: no AGENTS.md, CLAUDE.md or SKILL.md; the MCP initialize
+  `instructions` block and llms.txt are the providers agent-facing instructions and are captured in mcp/ and llms/).
+  Six skills generated from the served OpenAPI; every operationId verified verbatim in openapi/snhp-dev-openapi.yml.'
+summary: 'The providers own agent guidance is unusually complete (llms.txt quickstart, per-tool example_input in
+  /v1/catalog, the A2A_FLOW.md walkthrough), so these skills add the operation-level binding and the two things
+  an agent must carry into a paid call: nothing but key issuance is idempotent, and nothing that moves money can
+  be reversed. Marquee flows: the two free negotiation tools, the $2 receipted session with both funding rails (Stripe
+  Checkout and MPP), blind-locker agent memory, the verified-peer A2A + AP2 settlement flow, and the opt-in telemetry
+  loop with its GDPR export/erase.'
+provider_published: false
+provider_instruction_surfaces:
+- https://snhp.dev/llms.txt (quickstart + scaffolded prompt template)
+- MCP initialize instructions (mcp/snhp-dev-mcp-initialize.json)
+- GET /v1/catalog tools[].example_input / example_output
+- https://github.com/ryuxik/snhp/blob/main/gametheory/server/A2A_FLOW.md
+skills:
+- file: snhp-dev-negotiate-a-price.md
+  name: Negotiate a single price with SNHP (free, no key)
+  method: generated
+  api: openapi/snhp-dev-openapi.yml
+  operations:
+  - negotiate_turn_endpoint_v1_negotiate_turn_post
+  - issue_key_v1_keys_post
+- file: snhp-dev-logroll-a-multi-issue-deal.md
+  name: Logroll a multi-issue deal with SNHP (free)
+  method: generated
+  api: openapi/snhp-dev-openapi.yml
+  operations:
+  - negotiate_bundle_endpoint_v1_negotiate_bundle_post
+- file: snhp-dev-open-a-receipted-session.md
+  name: Open a $2 receipted negotiation session (key, wallet, session, receipt)
+  method: generated
+  api: openapi/snhp-dev-openapi.yml
+  operations:
+  - issue_key_v1_keys_post
+  - balance_v1_billing_balance_get
+  - store_catalog_v1_store_catalog_get
+  - checkout_session_v1_billing_checkout_session_post
+  - mpp_manifest_v1_mpp_manifest_get
+  - mpp_topup_v1_mpp_topup_post
+  - open_advice_session_v1_advice_session_post
+  - advice_move_v1_advice_move_post
+  - advice_bundle_move_v1_advice_bundle_post
+  - close_advice_session_v1_advice_close_post
+  - store_notary_pubkey_v1_store_notary_pubkey_get
+- file: snhp-dev-save-and-load-agent-memory.md
+  name: Save and load encrypted agent memory across sessions (blind locker)
+  method: generated
+  api: openapi/snhp-dev-openapi.yml
+  operations:
+  - issue_key_v1_keys_post
+  - memory_save_v1_memory_save_post
+  - memory_load_v1_memory_parcel__ticket__get
+  - store_notary_pubkey_v1_store_notary_pubkey_get
+- file: snhp-dev-verified-peer-deal-and-ap2-settlement.md
+  name: Verified-peer A2A deal with AP2 settlement (both agents run SNHP)
+  method: generated
+  api: openapi/snhp-dev-openapi.yml
+  operations:
+  - register_operator_v1_registry_register_operator_post
+  - request_domain_challenge_v1_registry_request_domain_challenge_post
+  - verify_domain_v1_registry_verify_domain_post
+  - open_session_v1_a2a_open_session_post
+  - next_offer_v1_a2a_next_offer_post
+  - settle_v1_a2a_settle_post
+  - keys_settlement_notary_v1_keys_settlement_notary_get
+- file: snhp-dev-opt-in-telemetry-and-gdpr-erase.md
+  name: Opt in to telemetry, report an outcome, export and erase your rows (GDPR Art. 15/17)
+  method: generated
+  api: openapi/snhp-dev-openapi.yml
+  operations:
+  - issue_key_v1_keys_post
+  - negotiation_sell_next_offer_v1_negotiation_sell_next_offer_post
+  - negotiation_buy_next_offer_v1_negotiation_buy_next_offer_post
+  - telemetry_report_outcome_v1_telemetry_report_outcome_post
+  - telemetry_export_v1_telemetry_export_get
+  - telemetry_delete_v1_telemetry_delete_delete
+excluded:
+- flow: dispute copilot (POST /v1/dispute/negotiate)
+  reason: Prototype over synthetic data; the LLM-backed drafting routes are off by default and operator-configured.
+- flow: offer-graph engine (compile / profile / quote), vend machine, notary verify
+  reason: Seller-menu tooling with deep JSON specs (MenuSpec/DimSpec/OptionSpec); no marquee flow documented beyond
+    the operation descriptions.
+- flow: rent helper and situation helper
+  reason: Consumer-facing free tools; not an agent integration flow.
+operation_coverage:
+  operations_in_spec: 74
+  operations_covered: 27
+cross_links:
+  agent_card: a2a/snhp-dev-a2a.yml
+  mcp: mcp/snhp-dev-mcp.yml
+  tool_crosswalk: mcp/snhp-dev-tool-crosswalk.yml
+  openapi: openapi/snhp-dev-openapi.yml
+  conventions: conventions/snhp-dev-conventions.yml
+  errors: errors/snhp-dev-problem-types.yml
+  authentication: authentication/snhp-dev-authentication.yml
+  plans: plans/snhp-dev-plans-pricing.yml
+  agentic_access: agentic-access/snhp-dev-agentic-access.yml

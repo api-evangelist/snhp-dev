@@ -1,0 +1,107 @@
+generated: '2026-09-19'
+method: probed
+source: https://snhp.dev/v1/store/catalog
+corroboration:
+  - https://snhp.dev/v1/catalog                  # pricing.tiers[] + sla
+  - https://snhp.dev/v1/mpp/manifest             # resources[] with base/fee/price cents
+  - https://snhp.dev/.well-known/agents.json     # capabilities[].price, payment.fee, starter_credit
+  - https://github.com/ryuxik/snhp/blob/main/PRICING.md   # the prose rate card (NOT served on the site — https://snhp.dev/PRICING.md 404s although /v1/catalog advertises it as pricing_url)
+  - https://snhp.dev/llms.txt
+checked: '2026-09-19'
+summary: >-
+  Free-first, wallet-later, and unusually machine-readable: every price is published by the API
+  itself. Tier 0 — all negotiation, auction and mechanism math — is free with no key. A prepaid
+  per-key wallet denominated in millicents (1000 per cent) funds three paid slots: a $2.00 receipted
+  negotiation SESSION (whole negotiation, cap 10 moves, 7 days), a $2.00 multi-issue BUNDLE session,
+  and a blind-locker MEMORY save at $0.005 (<=64 KiB) or $0.01 (<=256 KiB) per park, retrieval
+  free. Every new key gets a one-time unconditional $0.50 starter credit. The store's only fee is
+  on top-ups — 5% + $0.30 per transaction — so a $2.00 credit costs $2.40 by MPP; the $2 custom
+  minimum is the smallest top-up. Credit is prepaid and non-refundable. LLM-backed dispute
+  drafting is off by default and usage-based when enabled. A "0.1–0.5% of settled value" fee for
+  the A2A settlement layer is still advertised by GET /v1/catalog but PRICING.md explicitly
+  withdraws it ("We are not going to price a moat on a number our own kill conditions keep firing
+  at") — the two sources disagree and both are recorded verbatim.
+plan_count: 5
+currency: USD
+unit: millicents (1000 per cent; prices below in USD)
+plans:
+  - name: Tier 0 — Core math
+    id: tier-0-core
+    price: 0
+    currency: USD
+    billing_period: none
+    key_required: false
+    card_required: false
+    included_quota: unlimited (rate-limited 60/min per IP keyless, 600/min per key)
+    overage: none
+    includes: [negotiate / POST /v1/negotiate/turn, negotiate_bundle / POST /v1/negotiate/bundle, score_deal (MCP), auction_bid, auction_reserve, clearance_price, stable_match, all /v1/negotiation/*, /v1/auction/*, /v1/mechanism/*, rent/check, helper, notary verify, memory_load, discovery documents]
+    positioning_verbatim: 'Pure CPU, COGS ≈ $0.000005/call. This is the adoption wedge — the whole agent-facing surface.'
+    determinism: non-deterministic, unreceipted (the free turn says so in a paid_alternative field)
+    source: https://snhp.dev/v1/catalog
+  - name: NEXTMOVE receipted negotiation session (anchor SKU)
+    id: negotiate.session
+    price: 2.00
+    currency: USD
+    billing_period: per session
+    price_millicents: 200000
+    tier_verbatim: anchor
+    included_quota: 'every move of ONE negotiation — cap 10 moves, 7-day window'
+    overage: none (a new negotiation is a new $2 session)
+    includes: [session_open, session_advise, session_close, category tuning (resale | supply | retail), deterministic replay (fixed 400k-rollout budget + seed), Ed25519-signed per-move receipts with context_hash, persistent session state]
+    limits: [{scope: per-session, moves: 10}, {scope: per-session, window: 7 days}]
+    admission: 'full price up front — an underfunded wallet gets a 402 with top-up options, never a partial charge'
+    source: https://snhp.dev/v1/store/catalog
+  - name: Multi-issue bundle session (anchor SKU)
+    id: negotiate.bundle
+    price: 2.00
+    currency: USD
+    billing_period: per session
+    price_millicents: 200000
+    tier_verbatim: anchor
+    included_quota: 'logrolling package advice (issues[], my_batna) inside a session — session_bundle'
+    source: https://snhp.dev/v1/store/catalog
+  - name: Agent memory — blind locker (commodity slot)
+    id: locker
+    price: 'flat park fee by size tier'
+    currency: USD
+    billing_period: per save
+    entries:
+      - {label: 'park <= 65,536 bytes', price: 0.005, price_millicents: 500}
+      - {label: 'park <= 262,144 bytes', price: 0.01, price_millicents: 1000}
+      - {label: retrieve (memory_load), price: 0}
+    max_price_millicents: 1000
+    size_cap_bytes: 262144
+    ttl: {min_seconds: 60, default_seconds: 86400, max_seconds: 604800}
+    settlement: 'settle-on-accept: charged once, only after the blob is durably stored; never on a failed/oversize park, never on retrieve'
+    admission: 'a call is admitted while the wallet holds >= 1 millicent; the store eats the tail past the balance (bounded by the slot cap)'
+    source: https://snhp.dev/v1/store/catalog
+  - name: Tier 2 — LLM extras (dispute drafting / coaching)
+    id: tier-2-llm
+    price: 'usage-based when enabled; OFF by default'
+    currency: USD
+    billing_period: usage
+    default_enabled: false
+    limits: [{scope: per-deployment, window: day, cap: '$5 (SNHP_DAILY_LLM_USD default)'}, {scope: per-IP, window: hour, limit: 40}]
+    positioning_verbatim: 'the only endpoints that cost real API money ... opt-in, hard-capped, and meant to be key-gated (caller pays) in production'
+    source: https://github.com/ryuxik/snhp/blob/main/PRICING.md
+wallet:
+  starter_credit: {usd: 0.50, millicents: 50000, terms_verbatim: 'one-time, unconditional, no card required'}
+  top_up_fee: {percent: 5, fixed_usd: 0.30, applies_to: 'wallet top-ups only, never the calls', note_verbatim: 'the fixed 30¢ is the card rail''s per-transaction toll, passed through'}
+  minimum_top_up_usd: 2.00
+  example_verbatim: 'SNHP wallet top-up (200c credit): $2.00 + $0.40 (5% + $0.30 counter fee) = $2.40'
+  refundable: false
+  refund_statement_verbatim: 'funded credit is PREPAID and NON-REFUNDABLE — there is no cashout path; unspent credit stays as credit'
+  safety_rule_verbatim: 'you CANNOT PAY FOR NOTHING. A paid call settles only when a machine-checkable outcome is delivered; a failure is an uncharged 200 {ok:false, charged:false, reason, code}'
+  payment_methods:
+    - {id: stripe_checkout, human_required: true, endpoint: 'POST /v1/billing/checkout_session'}
+    - {id: mpp_spt, human_required: false, endpoint: 'POST /v1/mpp/topup', manifest: 'GET /v1/mpp/manifest', rail: fiat, crypto_accepted: false, methods: [card, link], spt_minimum_cents: 50}
+  balance: 'GET /v1/billing/balance (X-API-Key)'
+disputed_line_item:
+  item: 'A2A verified commerce + AP2 settlement fee'
+  catalog_says_verbatim: '0.1-0.5% of settled value (or operator seat); priced per partner'
+  catalog_source: https://snhp.dev/v1/catalog
+  pricing_md_says_verbatim: 'What we deliberately do not price: a percentage of settled value. ... If a settlement customer ever appears, the fee gets designed then, against their measured outcome.'
+  pricing_md_source: https://github.com/ryuxik/snhp/blob/main/PRICING.md
+  reading: 'The repository document is the more recent and more considered statement; the live endpoint still carries the older tier. Neither is treated as a price here.'
+no_sdk_pricing_verbatim: 'No SDK is sold or needed — agents integrate via MCP and the OpenAPI spec (/openapi.json), so a bespoke client library would be redundant.'
+enterprise: 'MCP quickstart, API pilots, concierge — https://snhp.dev/build (301s to the homepage; contact ryuxik@gmail.com). No enterprise tier or seat price published.'

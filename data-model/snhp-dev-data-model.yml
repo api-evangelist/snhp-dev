@@ -1,0 +1,828 @@
+generated: '2026-09-19'
+method: derived
+source: openapi/snhp-dev-openapi.yml components.schemas (78 schemas) — $ref edges and id-shaped fields; operation
+  requestBody bindings. Response schemas are untyped objects in the served spec, so response-side entities come
+  from the providers prose (llms.txt, /v1/catalog example_output, store catalog).
+summary: 'Not a CRUD resource model: the 78 schemas are almost all REQUEST bodies for stateless math (negotiation,
+  auction, mechanism, offer-graph) plus a handful of stateful objects the API mints and refers to by opaque id —
+  an API KEY (gt_*) that owns a WALLET (millicents) and TELEMETRY rows (per-week HMAC hashes), a receipted SESSION
+  (session_id, moves, context_hash), a locker TICKET (parked ciphertext with TTL), a demand-box REQUEST (request_id),
+  a first-strike COMMITMENT (commitment_id), a RECOMMENDATION (rec_*, for outcome reporting), an OPERATOR identity
+  (operator_id, attestation JWT, verification_level self|domain) and a verified-peer SESSION that yields an AP2
+  Cart/Intent MANDATE. Because every 200 response is declared as an untyped object, the response-side shapes (receipt,
+  wallet, mandate) are known only from prose and examples; the composed request objects (MenuSpec -> DimSpec ->
+  OptionSpec; QuoteRequest -> BuyerSpec/MenuSpec/StateSpec; OpenSessionRequest -> PeerProof x2; GaleShapleyRequest
+  -> Proposer[]/Receiver[]) are the only $ref graph.'
+entities_stateful:
+- entity: ApiKey
+  id: api_key (gt_*)
+  minted_by: issue_key_v1_keys_post
+  rotated_by: rotate_key_v1_keys_rotate_post
+  owns:
+  - Wallet
+  - TelemetryRows
+  - StoreRequests (my_requests)
+  - Sessions
+  - Tickets
+  schemas:
+  - IssueKeyRequest
+  - IssueKeyResponse
+  - RotateIn
+- entity: Wallet
+  id: (one per key)
+  unit: millicents
+  read_by: balance_v1_billing_balance_get
+  funded_by:
+  - checkout_session_v1_billing_checkout_session_post
+  - agentic_topup_v1_billing_agentic_topup_post
+  - mpp_topup_v1_mpp_topup_post
+  schemas:
+  - WalletSummary
+  - CheckoutIn
+  - AgenticTopupIn
+- entity: AdviceSession
+  id: session_id
+  opened_by: open_advice_session_v1_advice_session_post
+  moves_by:
+  - advice_move_v1_advice_move_post
+  - advice_bundle_move_v1_advice_bundle_post
+  closed_by: close_advice_session_v1_advice_close_post
+  has_many: Receipt (per move, context_hash)
+  schemas:
+  - SessionOpenIn
+  - SessionMoveIn
+  - BundleMoveIn
+  - SessionCloseIn
+- entity: LockerTicket
+  id: ticket
+  created_by:
+  - store_park_v1_store_park_post
+  - memory_save_v1_memory_save_post
+  read_by:
+  - store_retrieve_v1_store_parcel__ticket__get
+  - memory_load_v1_memory_parcel__ticket__get
+  attributes:
+  - expires_at (TTL 60..604800 s)
+  - size_bytes
+  - receipt.content_hash (blake2b-128 of the ciphertext)
+  schemas:
+  - ParkIn
+- entity: StoreRequest
+  id: request_id
+  created_by: store_request_v1_store_request_post
+  read_by:
+  - store_request_status_v1_store_request__request_id__get
+  - store_requests_v1_store_requests_get
+  - store_my_requests_v1_store_my_requests_get
+  attributes:
+  - status (logged -> ...)
+  - status_note
+  - same_ask_count
+  - watch
+  schemas:
+  - StoreRequestIn
+  - RequestIn
+- entity: FirstStrikeCommitment
+  id: commitment_id
+  created_by: negotiation_declare_first_strike_v1_negotiation_declare_first_strike_post
+  revealed_by: negotiation_reveal_first_strike_v1_negotiation_reveal_first_strike_post
+  verified_with: keys_trust_anchor_v1_keys_trust_anchor_get
+  schemas:
+  - DeclareFirstStrikeRequest
+  - DeclareFirstStrikeResponse
+  - RevealFirstStrikeRequest
+  - RevealFirstStrikeResponse
+- entity: Recommendation
+  id: 'X-GT-Recommendation-Id: rec_* (response header, telemetry opt-in only)'
+  created_by:
+  - negotiation_sell_next_offer_v1_negotiation_sell_next_offer_post
+  - negotiation_buy_next_offer_v1_negotiation_buy_next_offer_post
+  outcome_by: telemetry_report_outcome_v1_telemetry_report_outcome_post
+  schemas:
+  - ReportOutcomeRequest
+  - ReportOutcomeResponse
+- entity: TelemetryRow
+  id: per-week HMAC(pepper, api_key || iso_week) hash
+  exported_by: telemetry_export_v1_telemetry_export_get
+  deleted_by: telemetry_delete_v1_telemetry_delete_delete
+  schemas:
+  - TelemetryRecordOut
+  - TelemetryExportResponse
+  - TelemetryDeleteResponse
+- entity: Operator
+  id: operator_id
+  registered_by: register_operator_v1_registry_register_operator_post
+  upgraded_by:
+  - request_domain_challenge_v1_registry_request_domain_challenge_post
+  - verify_domain_v1_registry_verify_domain_post
+  attributes:
+  - public_key_b64 (Ed25519)
+  - attestation_jwt
+  - verification_level self | domain
+  schemas:
+  - RegisterOperatorRequest
+  - DomainChallengeRequest
+  - VerifyDomainRequest
+- entity: PeerSession
+  id: session_id (A2A)
+  opened_by: open_session_v1_a2a_open_session_post
+  uses: PeerProof x2 (seller_proof, buyer_proof)
+  advised_by: next_offer_v1_a2a_next_offer_post
+  settled_by: settle_v1_a2a_settle_post
+  yields: AP2 CartMandate (+ IntentMandate) as VC-JWT, verified with keys_settlement_notary_v1_keys_settlement_notary_get
+  schemas:
+  - OpenSessionRequest
+  - PeerProof
+  - NextOfferRequest
+  - SettleRequest
+- entity: VendQuote
+  id: quote_id
+  created_by: quote_v1_vend_quote_post
+  settled_by: settle_v1_vend_settle__quote_id__post
+  board: machine_board_v1_vend_machine_get
+  schemas:
+  - QuoteReq
+  - Intent
+  - BuyerBlock
+- entity: Receipt
+  id: (signature over canonical JSON)
+  attributes:
+  - price_millicents
+  - price_usd (5-decimal)
+  - content_hash blake2b-128
+  - signature ed25519 base64
+  - pubkey_fingerprint sha256:...
+  verified_with:
+  - store_notary_pubkey_v1_store_notary_pubkey_get
+  - notary_verify_v1_notary_verify_post
+  note: shape from GET /v1/store/catalog receipts block; not declared in any response schema
+relationships:
+- from: BuyNextOfferRequest
+  to: MarketPrior
+  type: has_one
+  via: market_prior
+- from: DetectAnchorAttackRequest
+  to: MarketPrior
+  type: has_one
+  via: market_prior
+- from: DimSpec
+  to: OptionSpec
+  type: has_many
+  via: options
+- from: FormatRecRequest
+  to: PriorParams
+  type: has_one
+  via: bidder_value_prior
+- from: GaleShapleyRequest
+  to: Proposer
+  type: has_many
+  via: proposers
+- from: GaleShapleyRequest
+  to: Receiver
+  type: has_many
+  via: receivers
+- from: HTTPValidationError
+  to: ValidationError
+  type: has_many
+  via: detail
+- from: Intent
+  to: BuyerBlock
+  type: has_one
+  via: buyer
+- from: IssueKeyResponse
+  to: WalletSummary
+  type: has_one
+  via: wallet
+- from: MenuSpec
+  to: DimSpec
+  type: has_many
+  via: dims
+- from: MenuSpec
+  to: DepsSpec
+  type: has_one
+  via: deps
+- from: NegotiateBundleRequest
+  to: BundleIssue
+  type: has_many
+  via: issues
+- from: OpenSessionRequest
+  to: PeerProof
+  type: has_one
+  via: seller_proof
+- from: OpenSessionRequest
+  to: PeerProof
+  type: has_one
+  via: buyer_proof
+- from: OptimalAuctionDesignRequest
+  to: PriorParams
+  type: has_many
+  via: bidder_priors
+- from: OptimalBidRequest
+  to: PriorParams
+  type: has_one
+  via: competitor_value_prior
+- from: OptimalReserveRequest
+  to: PriorParams
+  type: has_one
+  via: bidder_value_prior
+- from: PostedPriceRequest
+  to: PriorParams
+  type: has_one
+  via: buyer_arrival_prior
+- from: ProfileRequest
+  to: MenuSpec
+  type: has_one
+  via: spec
+- from: ProfileRequest
+  to: StateSpec
+  type: has_one
+  via: state
+- from: QuoteReq
+  to: Intent
+  type: has_one
+  via: intent
+- from: QuoteRequest
+  to: MenuSpec
+  type: has_one
+  via: spec
+- from: QuoteRequest
+  to: StateSpec
+  type: has_one
+  via: state
+- from: QuoteRequest
+  to: BuyerSpec
+  type: has_one
+  via: buyer
+- from: QuoteRequest
+  to: QuoteOptsSpec
+  type: has_one
+  via: opts
+- from: SellNextOfferRequest
+  to: WTPPrior
+  type: has_one
+  via: buyer_wtp_prior
+- from: SimulateRequest
+  to: PriorParams
+  type: has_many
+  via: bidder_priors
+- from: TelemetryExportResponse
+  to: TelemetryRecordOut
+  type: has_many
+  via: rows
+id_fields:
+- schema: AgenticTopupIn
+  field: api_key
+  type: string
+  description: Api Key
+- schema: BundleMoveIn
+  field: api_key
+  type: string
+  description: Api Key
+- schema: BundleMoveIn
+  field: session_id
+  type: string
+  description: Session Id
+- schema: CheckoutIn
+  field: api_key
+  type: string
+  description: Api Key
+- schema: DeclareFirstStrikeRequest
+  field: buyer_id
+  type: string
+  description: Buyer Id
+- schema: DeclareFirstStrikeRequest
+  field: seller_id
+  type: string
+  description: Seller Id
+- schema: DeclareFirstStrikeResponse
+  field: commitment_id
+  type: string
+  description: Commitment Id
+- schema: DimSpec
+  field: id
+  type: string
+  description: Id
+- schema: FetchIn
+  field: api_key
+  type: anyOf
+  description: Api Key
+- schema: IssueKeyRequest
+  field: agent_id
+  type: string
+  description: Stable identifier for the calling agent
+- schema: IssueKeyResponse
+  field: api_key
+  type: string
+  description: Api Key
+- schema: NextOfferRequest
+  field: session_id
+  type: string
+  description: From /v1/a2a/open_session
+- schema: OpenSessionRequest
+  field: negotiation_id
+  type: string
+  description: Shared id both agents agree on (e.g. the A2A task id)
+- schema: OptionSpec
+  field: id
+  type: string
+  description: Id
+- schema: ParkIn
+  field: api_key
+  type: anyOf
+  description: Api Key
+- schema: Proposer
+  field: id
+  type: string
+  description: Id
+- schema: QuoteReq
+  field: machine_id
+  type: string
+  description: Machine Id
+- schema: Receiver
+  field: id
+  type: string
+  description: Id
+- schema: RegisterOperatorRequest
+  field: operator_id
+  type: string
+  description: Stable operator identity (e.g. a domain or org id)
+- schema: ReportOutcomeRequest
+  field: recommendation_id
+  type: string
+  description: The X-GT-Recommendation-Id returned when share_outcome=True
+- schema: RequestIn
+  field: api_key
+  type: anyOf
+  description: Api Key
+- schema: RevealFirstStrikeRequest
+  field: commitment_id
+  type: string
+  description: Commitment Id
+- schema: RevealFirstStrikeResponse
+  field: buyer_id
+  type: string
+  description: Buyer Id
+- schema: RevealFirstStrikeResponse
+  field: seller_id
+  type: string
+  description: Seller Id
+- schema: RotateIn
+  field: api_key
+  type: string
+  description: Api Key
+- schema: SessionCloseIn
+  field: api_key
+  type: string
+  description: Api Key
+- schema: SessionCloseIn
+  field: session_id
+  type: string
+  description: Session Id
+- schema: SessionMoveIn
+  field: api_key
+  type: string
+  description: Api Key
+- schema: SessionMoveIn
+  field: session_id
+  type: string
+  description: Session Id
+- schema: SessionOpenIn
+  field: api_key
+  type: string
+  description: Api Key
+- schema: SettleRequest
+  field: session_id
+  type: string
+  description: Session Id
+- schema: StoreRequestIn
+  field: api_key
+  type: anyOf
+  description: Api Key
+- schema: TelemetryRecordOut
+  field: recommendation_id
+  type: string
+  description: Recommendation Id
+schemas:
+- name: AgenticTopupIn
+  kind: request
+  fields: 3
+  required: 3
+  used_by:
+  - agentic_topup_v1_billing_agentic_topup_post
+- name: BundleIssue
+  kind: component
+  fields: 4
+  required: 4
+  used_by: []
+- name: BundleMoveIn
+  kind: request
+  fields: 8
+  required: 3
+  used_by:
+  - advice_bundle_move_v1_advice_bundle_post
+- name: BuyNextOfferRequest
+  kind: request
+  fields: 10
+  required: 2
+  used_by:
+  - negotiation_buy_next_offer_v1_negotiation_buy_next_offer_post
+- name: BuyNextOfferResponse
+  kind: response
+  fields: 9
+  required: 9
+  used_by: []
+- name: BuyerBlock
+  kind: component
+  fields: 2
+  required: 1
+  used_by: []
+- name: BuyerSpec
+  kind: request
+  fields: 5
+  required: 0
+  used_by: []
+- name: CheckoutIn
+  kind: request
+  fields: 5
+  required: 1
+  used_by:
+  - checkout_session_v1_billing_checkout_session_post
+- name: DeclareFirstStrikeRequest
+  kind: request
+  fields: 5
+  required: 5
+  used_by:
+  - negotiation_declare_first_strike_v1_negotiation_declare_first_strike_post
+- name: DeclareFirstStrikeResponse
+  kind: response
+  fields: 5
+  required: 5
+  used_by: []
+- name: DepsSpec
+  kind: request
+  fields: 3
+  required: 0
+  used_by: []
+- name: DetectAnchorAttackRequest
+  kind: request
+  fields: 2
+  required: 2
+  used_by:
+  - negotiation_detect_anchor_attack_v1_negotiation_detect_anchor_attack_post
+- name: DetectAnchorAttackResponse
+  kind: response
+  fields: 5
+  required: 5
+  used_by: []
+- name: DimSpec
+  kind: request
+  fields: 5
+  required: 2
+  used_by: []
+- name: DisputeNegotiateRequest
+  kind: request
+  fields: 5
+  required: 3
+  used_by:
+  - dispute_negotiate_v1_dispute_negotiate_post
+- name: DomainChallengeRequest
+  kind: request
+  fields: 2
+  required: 2
+  used_by:
+  - request_domain_challenge_v1_registry_request_domain_challenge_post
+- name: FetchIn
+  kind: request
+  fields: 2
+  required: 1
+  used_by:
+  - store_fetch_v1_fetch_post
+- name: FormatRecRequest
+  kind: request
+  fields: 4
+  required: 3
+  used_by:
+  - auction_seller_format_recommendation_v1_auction_seller_format_recommendation_post
+- name: FormatRecResponse
+  kind: response
+  fields: 4
+  required: 4
+  used_by: []
+- name: GaleShapleyRequest
+  kind: request
+  fields: 2
+  required: 2
+  used_by:
+  - mechanism_gale_shapley_v1_mechanism_gale_shapley_post
+- name: GaleShapleyResponse
+  kind: response
+  fields: 4
+  required: 4
+  used_by: []
+- name: HTTPValidationError
+  kind: component
+  fields: 1
+  required: 0
+  used_by: []
+- name: Intent
+  kind: component
+  fields: 4
+  required: 1
+  used_by: []
+- name: IssueKeyRequest
+  kind: request
+  fields: 4
+  required: 3
+  used_by:
+  - issue_key_v1_keys_post
+- name: IssueKeyResponse
+  kind: response
+  fields: 7
+  required: 7
+  used_by: []
+- name: MarketPrior
+  kind: component
+  fields: 2
+  required: 2
+  used_by: []
+- name: MenuSpec
+  kind: request
+  fields: 4
+  required: 1
+  used_by:
+  - offer_compile_v1_offer_compile_post
+- name: NegotiateBundleRequest
+  kind: request
+  fields: 6
+  required: 1
+  used_by:
+  - negotiate_bundle_endpoint_v1_negotiate_bundle_post
+- name: NegotiateTurnRequest
+  kind: request
+  fields: 7
+  required: 3
+  used_by:
+  - negotiate_turn_endpoint_v1_negotiate_turn_post
+- name: NextOfferRequest
+  kind: request
+  fields: 8
+  required: 3
+  used_by:
+  - next_offer_v1_a2a_next_offer_post
+- name: OpenSessionRequest
+  kind: request
+  fields: 4
+  required: 3
+  used_by:
+  - open_session_v1_a2a_open_session_post
+- name: OptimalAuctionDesignRequest
+  kind: request
+  fields: 7
+  required: 2
+  used_by:
+  - mechanism_optimal_auction_design_v1_mechanism_optimal_auction_design_post
+- name: OptimalAuctionDesignResponse
+  kind: response
+  fields: 6
+  required: 6
+  used_by: []
+- name: OptimalBidRequest
+  kind: request
+  fields: 8
+  required: 4
+  used_by:
+  - auction_bidder_optimal_bid_v1_auction_bidder_optimal_bid_post
+- name: OptimalBidResponse
+  kind: response
+  fields: 5
+  required: 5
+  used_by: []
+- name: OptimalReserveRequest
+  kind: request
+  fields: 3
+  required: 3
+  used_by:
+  - auction_seller_optimal_reserve_v1_auction_seller_optimal_reserve_post
+- name: OptimalReserveResponse
+  kind: response
+  fields: 5
+  required: 5
+  used_by: []
+- name: OptionSpec
+  kind: request
+  fields: 9
+  required: 1
+  used_by: []
+- name: ParkIn
+  kind: request
+  fields: 3
+  required: 1
+  used_by:
+  - store_park_v1_store_park_post
+  - memory_save_v1_memory_save_post
+- name: PeerProof
+  kind: component
+  fields: 4
+  required: 2
+  used_by: []
+- name: PostedPriceRequest
+  kind: request
+  fields: 8
+  required: 4
+  used_by:
+  - mechanism_posted_price_optimal_v1_mechanism_posted_price_optimal_post
+- name: PostedPriceResponse
+  kind: response
+  fields: 7
+  required: 7
+  used_by: []
+- name: PriorParams
+  kind: component
+  fields: 2
+  required: 2
+  used_by: []
+- name: ProfileRequest
+  kind: request
+  fields: 2
+  required: 1
+  used_by:
+  - offer_profile_v1_offer_profile_post
+- name: Proposer
+  kind: component
+  fields: 2
+  required: 1
+  used_by: []
+- name: QuoteOptsSpec
+  kind: request
+  fields: 4
+  required: 0
+  used_by: []
+- name: QuoteReq
+  kind: request
+  fields: 3
+  required: 1
+  used_by:
+  - quote_v1_vend_quote_post
+- name: QuoteRequest
+  kind: request
+  fields: 5
+  required: 2
+  used_by:
+  - offer_quote_v1_offer_quote_post
+- name: Receiver
+  kind: component
+  fields: 3
+  required: 1
+  used_by: []
+- name: RegisterOperatorRequest
+  kind: request
+  fields: 3
+  required: 2
+  used_by:
+  - register_operator_v1_registry_register_operator_post
+- name: ReportOutcomeRequest
+  kind: request
+  fields: 4
+  required: 2
+  used_by:
+  - telemetry_report_outcome_v1_telemetry_report_outcome_post
+- name: ReportOutcomeResponse
+  kind: response
+  fields: 1
+  required: 1
+  used_by: []
+- name: RequestIn
+  kind: request
+  fields: 3
+  required: 1
+  used_by:
+  - advice_request_v1_advice_request_post
+- name: RevealFirstStrikeRequest
+  kind: request
+  fields: 4
+  required: 4
+  used_by:
+  - negotiation_reveal_first_strike_v1_negotiation_reveal_first_strike_post
+- name: RevealFirstStrikeResponse
+  kind: response
+  fields: 6
+  required: 6
+  used_by: []
+- name: RotateIn
+  kind: request
+  fields: 1
+  required: 1
+  used_by:
+  - rotate_key_v1_keys_rotate_post
+- name: SellNextOfferRequest
+  kind: request
+  fields: 9
+  required: 2
+  used_by:
+  - negotiation_sell_next_offer_v1_negotiation_sell_next_offer_post
+- name: SellNextOfferResponse
+  kind: response
+  fields: 7
+  required: 7
+  used_by: []
+- name: SessionCloseIn
+  kind: request
+  fields: 2
+  required: 2
+  used_by:
+  - close_advice_session_v1_advice_close_post
+- name: SessionMoveIn
+  kind: request
+  fields: 5
+  required: 3
+  used_by:
+  - advice_move_v1_advice_move_post
+- name: SessionOpenIn
+  kind: request
+  fields: 9
+  required: 5
+  used_by:
+  - open_advice_session_v1_advice_session_post
+- name: SettleRequest
+  kind: request
+  fields: 6
+  required: 2
+  used_by:
+  - settle_v1_a2a_settle_post
+- name: SimulateRequest
+  kind: request
+  fields: 5
+  required: 3
+  used_by:
+  - auction_simulate_v1_auction_simulate_post
+- name: SimulateResponse
+  kind: response
+  fields: 5
+  required: 5
+  used_by: []
+- name: StateSpec
+  kind: request
+  fields: 5
+  required: 0
+  used_by: []
+- name: StoreRequestIn
+  kind: request
+  fields: 3
+  required: 1
+  used_by:
+  - store_request_v1_store_request_post
+- name: TelemetryDeleteResponse
+  kind: response
+  fields: 1
+  required: 1
+  used_by: []
+- name: TelemetryExportResponse
+  kind: response
+  fields: 1
+  required: 1
+  used_by: []
+- name: TelemetryRecordOut
+  kind: response
+  fields: 7
+  required: 7
+  used_by: []
+- name: ValidationError
+  kind: component
+  fields: 5
+  required: 3
+  used_by: []
+- name: VerifyDomainRequest
+  kind: request
+  fields: 3
+  required: 2
+  used_by:
+  - verify_domain_v1_registry_verify_domain_post
+- name: WTPPrior
+  kind: component
+  fields: 2
+  required: 2
+  used_by: []
+- name: WalletSummary
+  kind: response
+  fields: 3
+  required: 3
+  used_by: []
+- name: _HelperAskRequest
+  kind: request
+  fields: 4
+  required: 0
+  used_by:
+  - helper_ask_v1_helper_ask_post
+- name: _HelperOutcomeRequest
+  kind: request
+  fields: 3
+  required: 2
+  used_by:
+  - helper_outcome_v1_helper_outcome_post
+- name: _RentCheckRequest
+  kind: request
+  fields: 4
+  required: 4
+  used_by:
+  - rent_check_v1_rent_check_post
+render: none — no subway/ diagram in this repo

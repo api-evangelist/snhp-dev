@@ -1,0 +1,517 @@
+generated: '2026-09-19'
+method: derived
+source: mcp/snhp-dev-mcp-tools.json (live tools/list from https://snhp.dev/mcp/, 15 tools) and mcp/snhp-dev-mcp-pro-tools.json
+  (live tools/list from https://snhp.dev/mcp/pro/, 54 tools), bound against openapi/snhp-dev-openapi.yml (live from
+  https://snhp.dev/openapi.json, 74 operations). Bindings taken first from the providers own /.well-known/agents.json
+  free_tools[] (endpoint + mcp_tool pairs), then from tool descriptions that declare themselves aliases, then by
+  schema identity; every operationId below was verified to exist in the spec by the script that wrote this file.
+summary: 'One engine, three projections. The core MCP door is a curated 15-tool subset in which 14 tools bind to
+  REST operations at high confidence and one (score_deal) has no REST twin. The pro door adds 39 tools: 34 bind
+  to REST (28 high, 1 medium), 12 of them are explicit "Alias of" legacy names for core tools, and 5 are MCP-only
+  — the local peer-proof signer and four "pondering" session tools that keep server-side state between turns. Of
+  74 REST operations, 38 are reachable through some MCP tool and 36 are REST-only: key issuance and rotation, billing/top-up
+  and the Stripe webhook, the MPP payment endpoints, the vend quote/settle pair, offer_compile, notary key/verify,
+  store_fetch and the observatory, advice_request, the dispute prototype, the three GDPR telemetry operations, the
+  rent helper and the situation helper, and the discovery documents. Notably an agent CANNOT mint a key or fund
+  a wallet over MCP — the paid tools take a gt_* key as an argument that must first be issued over HTTP (POST /v1/keys).'
+surfaces:
+  rest_openapi: 'openapi/snhp-dev-openapi.yml  # OpenAPI 3.1.0, 74 operations, 76 schemas; verbatim original in
+    openapi/_original/'
+  rest_openapi_arena: 'openapi/snhp-dev-arena-openapi.yml  # separate Evolution Arena app on arena.snhp.dev, 31
+    operations, no MCP tools bind to it'
+  graphql: null
+  mcp_core: 'https://snhp.dev/mcp/  # tools/list open, 15 tools, annotated'
+  mcp_pro: 'https://snhp.dev/mcp/pro/  # tools/list open, 54 tools, unannotated'
+  mcp_server_card: well-known/snhp-dev-mcp-server-card.json
+  agents_json: 'well-known/snhp-dev-agents.json  # the providers own tool<->endpoint map, used as ground truth where
+    it speaks'
+coverage:
+  mcp_tools_core: 15
+  mcp_tools_pro: 54
+  mcp_tools_distinct: 54
+  bound: 48
+  bound_high: 47
+  bound_medium: 1
+  legacy_aliases: 12
+  mcp_only: 6
+  rest_operations: 74
+  rest_operations_with_tool: 38
+  rest_only: 36
+  rest_bound_pct: 51.4
+crosswalk:
+- tool: negotiate
+  door: core
+  category: negotiation
+  rest:
+  - negotiate_turn_endpoint_v1_negotiate_turn_post
+  binding: rest
+  confidence: high
+  note: agents.json binds negotiate -> POST /v1/negotiate/turn; identical field set (side, walk_away, target, counterparty_offers,
+    my_previous_offers, rounds_left, item) plus a tool-only compute_ms.
+- tool: negotiate_bundle
+  door: core
+  category: negotiation
+  rest:
+  - negotiate_bundle_endpoint_v1_negotiate_bundle_post
+  binding: rest
+  confidence: high
+  note: agents.json binding; same NegotiateBundleRequest fields.
+- tool: auction_bid
+  door: core
+  category: auctions
+  rest:
+  - auction_bidder_optimal_bid_v1_auction_bidder_optimal_bid_post
+  binding: rest
+  confidence: high
+  note: agents.json binding; OptimalBidRequest.
+- tool: auction_reserve
+  door: core
+  category: auctions
+  rest:
+  - auction_seller_optimal_reserve_v1_auction_seller_optimal_reserve_post
+  binding: rest
+  confidence: high
+  note: agents.json binding; OptimalReserveRequest.
+- tool: clearance_price
+  door: core
+  category: mechanism
+  rest:
+  - mechanism_posted_price_optimal_v1_mechanism_posted_price_optimal_post
+  binding: rest
+  confidence: high
+  note: agents.json binds clearance_price -> POST /v1/mechanism/posted_price_optimal; PostedPriceRequest.
+- tool: stable_match
+  door: core
+  category: mechanism
+  rest:
+  - mechanism_gale_shapley_v1_mechanism_gale_shapley_post
+  binding: rest
+  confidence: high
+  note: agents.json binding; GaleShapleyRequest (proposers, receivers).
+- tool: memory_save
+  door: core
+  category: agent-memory
+  rest:
+  - memory_save_v1_memory_save_post
+  - store_park_v1_store_park_post
+  binding: rest
+  confidence: high
+  note: The two REST paths are aliases of one handler (the spec says so); tool args api_key, blob_b64, ttl_seconds
+    = ParkIn.
+- tool: memory_load
+  door: core
+  category: agent-memory
+  rest:
+  - memory_load_v1_memory_parcel__ticket__get
+  - store_retrieve_v1_store_parcel__ticket__get
+  binding: rest
+  confidence: high
+  note: Ticket path parameter; key via header or arg.
+- tool: session_open
+  door: core
+  category: receipted-session
+  rest:
+  - open_advice_session_v1_advice_session_post
+  binding: rest
+  confidence: high
+  note: agents.json binds the $2 session open -> POST /v1/advice/session; SessionOpenIn.
+- tool: session_advise
+  door: core
+  category: receipted-session
+  rest:
+  - advice_move_v1_advice_move_post
+  binding: rest
+  confidence: high
+  note: SessionMoveIn.
+- tool: session_bundle
+  door: core
+  category: receipted-session
+  rest:
+  - advice_bundle_move_v1_advice_bundle_post
+  binding: rest
+  confidence: high
+  note: BundleMoveIn.
+- tool: session_close
+  door: core
+  category: receipted-session
+  rest:
+  - close_advice_session_v1_advice_close_post
+  binding: rest
+  confidence: high
+  note: SessionCloseIn.
+- tool: store_catalog
+  door: core
+  category: store
+  rest:
+  - store_catalog_v1_store_catalog_get
+  - balance_v1_billing_balance_get
+  binding: rest
+  confidence: high
+  note: 'Tool title "Store catalog & wallet balance": the shelf comes from /v1/store/catalog (verified by a live
+    tools/call returning the same JSON) and the balance from /v1/billing/balance when a key is present.'
+- tool: store_request
+  door: core
+  category: store
+  rest:
+  - store_request_v1_store_request_post
+  - store_request_status_v1_store_request__request_id__get
+  binding: rest
+  confidence: high
+  note: Files a request (StoreRequestIn) or, with request_id, reads its status.
+- tool: gt_negotiation_sell_next_offer
+  door: pro
+  category: negotiation-utility-space
+  rest:
+  - negotiation_sell_next_offer_v1_negotiation_sell_next_offer_post
+  binding: rest
+  confidence: high
+  note: SellNextOfferRequest; the llms.txt Tier 1 twin.
+- tool: gt_negotiation_buy_next_offer
+  door: pro
+  category: negotiation-utility-space
+  rest:
+  - negotiation_buy_next_offer_v1_negotiation_buy_next_offer_post
+  binding: rest
+  confidence: high
+  note: BuyNextOfferRequest incl. defenses + market_prior.
+- tool: gt_negotiation_detect_anchor_attack
+  door: pro
+  category: negotiation-utility-space
+  rest:
+  - negotiation_detect_anchor_attack_v1_negotiation_detect_anchor_attack_post
+  binding: rest
+  confidence: high
+  note: DetectAnchorAttackRequest.
+- tool: gt_negotiation_declare_first_strike
+  door: pro
+  category: first-strike-attestation
+  rest:
+  - negotiation_declare_first_strike_v1_negotiation_declare_first_strike_post
+  binding: rest
+  confidence: high
+  note: DeclareFirstStrikeRequest.
+- tool: gt_negotiation_reveal_first_strike
+  door: pro
+  category: first-strike-attestation
+  rest:
+  - negotiation_reveal_first_strike_v1_negotiation_reveal_first_strike_post
+  binding: rest
+  confidence: high
+  note: RevealFirstStrikeRequest.
+- tool: gt_negotiation_trust_anchor_public_key
+  door: pro
+  category: first-strike-attestation
+  rest:
+  - keys_trust_anchor_v1_keys_trust_anchor_get
+  binding: rest
+  confidence: high
+  note: Both return the first-strike attestation public key PEM.
+- tool: gt_auction_format_recommendation
+  door: pro
+  category: auctions
+  rest:
+  - auction_seller_format_recommendation_v1_auction_seller_format_recommendation_post
+  binding: rest
+  confidence: high
+  note: FormatRecRequest.
+- tool: gt_auction_simulate
+  door: pro
+  category: auctions
+  rest:
+  - auction_simulate_v1_auction_simulate_post
+  binding: rest
+  confidence: high
+  note: SimulateRequest.
+- tool: gt_mechanism_optimal_auction_design
+  door: pro
+  category: mechanism
+  rest:
+  - mechanism_optimal_auction_design_v1_mechanism_optimal_auction_design_post
+  binding: rest
+  confidence: high
+  note: OptimalAuctionDesignRequest.
+- tool: gt_a2a_register_operator
+  door: pro
+  category: verified-peer-a2a
+  rest:
+  - register_operator_v1_registry_register_operator_post
+  binding: rest
+  confidence: high
+  note: Step 0 of the A2A flow; RegisterOperatorRequest. The agent card extension names this URL.
+- tool: gt_a2a_request_domain_challenge
+  door: pro
+  category: verified-peer-a2a
+  rest:
+  - request_domain_challenge_v1_registry_request_domain_challenge_post
+  binding: rest
+  confidence: high
+  note: DomainChallengeRequest.
+- tool: gt_a2a_verify_domain
+  door: pro
+  category: verified-peer-a2a
+  rest:
+  - verify_domain_v1_registry_verify_domain_post
+  binding: rest
+  confidence: high
+  note: VerifyDomainRequest.
+- tool: gt_a2a_open_session
+  door: pro
+  category: verified-peer-a2a
+  rest:
+  - open_session_v1_a2a_open_session_post
+  binding: rest
+  confidence: high
+  note: Step 3; OpenSessionRequest with two PeerProof objects.
+- tool: gt_a2a_next_offer
+  door: pro
+  category: verified-peer-a2a
+  rest:
+  - next_offer_v1_a2a_next_offer_post
+  binding: rest
+  confidence: high
+  note: Step 4; NextOfferRequest.
+- tool: gt_a2a_settle
+  door: pro
+  category: verified-peer-a2a
+  rest:
+  - settle_v1_a2a_settle_post
+  binding: rest
+  confidence: high
+  note: Step 5; SettleRequest -> signed AP2 Cart (and Intent) Mandate.
+- tool: offer_profile_menu
+  door: pro
+  category: offer-graph
+  rest:
+  - offer_profile_v1_offer_profile_post
+  binding: rest
+  confidence: high
+  note: ProfileRequest (spec, state).
+- tool: offer_quote
+  door: pro
+  category: offer-graph
+  rest:
+  - offer_quote_v1_offer_quote_post
+  binding: rest
+  confidence: high
+  note: QuoteRequest (spec, buyer, state, config, quote opts).
+- tool: nextmove_catalog
+  door: pro
+  category: store
+  rest:
+  - machine_board_v1_vend_machine_get
+  - store_catalog_v1_store_catalog_get
+  binding: rest
+  confidence: medium
+  note: 'Tool text is "The NEXTMOVE vending machine: whats on the shelf and how to pay" — the vend routers GET /v1/vend/machine
+    ("Machine Board") is the closest twin; the store catalog carries the same anchor SKUs. Mapped by semantics,
+    not by a published binding.'
+- tool: nextmove_request
+  door: pro
+  category: store
+  rest:
+  - store_request_v1_store_request_post
+  binding: rest
+  confidence: high
+  note: The tool says it "shares the stores demand loop, so a request filed here gets the SAME request_id + status".
+- tool: store_request_status
+  door: pro
+  category: store
+  rest:
+  - store_request_status_v1_store_request__request_id__get
+  binding: rest
+  confidence: high
+  note: Same {request_id, status, status_note, filed_at, door, text} shape.
+- tool: store_requests
+  door: pro
+  category: store
+  rest:
+  - store_requests_v1_store_requests_get
+  binding: rest
+  confidence: high
+  note: Public demand tally.
+- tool: store_my_requests
+  door: pro
+  category: store
+  rest:
+  - store_my_requests_v1_store_my_requests_get
+  binding: rest
+  confidence: high
+  note: Keyed private filings.
+- tool: gt_negotiate_turn
+  door: pro
+  category: legacy-alias
+  rest:
+  - negotiate_turn_endpoint_v1_negotiate_turn_post
+  binding: rest
+  confidence: high
+  note: Declared "Alias of `negotiate`" in its own description.
+- tool: gt_negotiate_bundle
+  door: pro
+  category: legacy-alias
+  rest:
+  - negotiate_bundle_endpoint_v1_negotiate_bundle_post
+  binding: rest
+  confidence: high
+  note: Alias of negotiate_bundle.
+- tool: gt_auction_optimal_bid
+  door: pro
+  category: legacy-alias
+  rest:
+  - auction_bidder_optimal_bid_v1_auction_bidder_optimal_bid_post
+  binding: rest
+  confidence: high
+  note: Alias of auction_bid.
+- tool: gt_auction_optimal_reserve
+  door: pro
+  category: legacy-alias
+  rest:
+  - auction_seller_optimal_reserve_v1_auction_seller_optimal_reserve_post
+  binding: rest
+  confidence: high
+  note: Alias of auction_reserve.
+- tool: gt_mechanism_posted_price_optimal
+  door: pro
+  category: legacy-alias
+  rest:
+  - mechanism_posted_price_optimal_v1_mechanism_posted_price_optimal_post
+  binding: rest
+  confidence: high
+  note: Alias of clearance_price.
+- tool: gt_mechanism_gale_shapley
+  door: pro
+  category: legacy-alias
+  rest:
+  - mechanism_gale_shapley_v1_mechanism_gale_shapley_post
+  binding: rest
+  confidence: high
+  note: Alias of stable_match.
+- tool: store_park
+  door: pro
+  category: legacy-alias
+  rest:
+  - store_park_v1_store_park_post
+  - memory_save_v1_memory_save_post
+  binding: rest
+  confidence: high
+  note: Alias of memory_save.
+- tool: store_retrieve
+  door: pro
+  category: legacy-alias
+  rest:
+  - store_retrieve_v1_store_parcel__ticket__get
+  - memory_load_v1_memory_parcel__ticket__get
+  binding: rest
+  confidence: high
+  note: Alias of memory_load.
+- tool: nextmove_open
+  door: pro
+  category: legacy-alias
+  rest:
+  - open_advice_session_v1_advice_session_post
+  binding: rest
+  confidence: high
+  note: Alias of session_open.
+- tool: nextmove_advise
+  door: pro
+  category: legacy-alias
+  rest:
+  - advice_move_v1_advice_move_post
+  binding: rest
+  confidence: high
+  note: Alias of session_advise.
+- tool: nextmove_bundle
+  door: pro
+  category: legacy-alias
+  rest:
+  - advice_bundle_move_v1_advice_bundle_post
+  binding: rest
+  confidence: high
+  note: Alias of session_bundle.
+- tool: nextmove_close
+  door: pro
+  category: legacy-alias
+  rest:
+  - close_advice_session_v1_advice_close_post
+  binding: rest
+  confidence: high
+  note: Alias of session_close.
+mcp_only:
+- tool: score_deal
+  door: core
+  reason: Pareto-frontier deal scoring (issues, my_weights, their_weights, package, notional). agents.json lists
+    it with an mcp_tool and NO endpoint; no REST operation scores a package. The certificate gauntlets scoring oracle
+    exposed as a tool.
+- tool: gt_a2a_build_peer_proof
+  door: pro
+  reason: Step 1 of the A2A flow signs a per-negotiation proof with the operator PRIVATE key; the provider says
+    the key never leaves the process and to run the MCP server on your own host. Deliberately not a REST operation.
+- tool: gt_negotiate_open_session
+  door: pro
+  reason: '"Pondering" sessions: stateful server-side speculation over likely counter-offers between turns. No REST
+    twin in the spec (the /v1/advice/* sessions are the paid receipted product, a different thing).'
+- tool: gt_negotiate_propose
+  door: pro
+  reason: Pondering session move; no REST twin.
+- tool: gt_negotiate_respond
+  door: pro
+  reason: Pondering session response; no REST twin.
+- tool: gt_negotiate_close_session
+  door: pro
+  reason: Pondering session close; no REST twin.
+rest_only:
+- capability: discovery
+  operations:
+  - mcp_server_card__well_known_mcp_server_card_json_get
+  - agent_card__well_known_agent_card_json_get
+  - agents_json__well_known_agents_json_get
+  - internal_params_v1_internal_params_get
+  - catalog_v1_catalog_get
+  - llms_txt_llms_txt_get
+  - llms_full_txt_llms_full_txt_get
+  - pricing_md_PRICING_md_get
+  - issue_key_v1_keys_post
+  - keys_settlement_notary_v1_keys_settlement_notary_get
+  - health_health_get
+- capability: billing
+  operations:
+  - checkout_session_v1_billing_checkout_session_post
+  - agentic_topup_v1_billing_agentic_topup_post
+  - webhook_v1_billing_webhook_post
+  - rotate_key_v1_keys_rotate_post
+  - advice_request_v1_advice_request_post
+  - store_notary_pubkey_v1_store_notary_pubkey_get
+  - store_fetch_v1_fetch_post
+  - store_observatory_v1_store_observatory_get
+- capability: mpp
+  operations:
+  - mpp_topup_v1_mpp_topup_post
+  - mpp_manifest_v1_mpp_manifest_get
+- capability: vend
+  operations:
+  - quote_v1_vend_quote_post
+  - settle_v1_vend_settle__quote_id__post
+- capability: offer
+  operations:
+  - offer_compile_v1_offer_compile_post
+- capability: notary
+  operations:
+  - notary_key_v1_notary_key_get
+  - notary_verify_v1_notary_verify_post
+- capability: telemetry
+  operations:
+  - telemetry_report_outcome_v1_telemetry_report_outcome_post
+  - telemetry_delete_v1_telemetry_delete_delete
+  - telemetry_export_v1_telemetry_export_get
+- capability: negotiation
+  operations:
+  - dispute_negotiate_v1_dispute_negotiate_post
+- capability: rent
+  operations:
+  - rent_metros_v1_rent_metros_get
+  - rent_check_v1_rent_check_post
+- capability: helper
+  operations:
+  - helper_situations_v1_helper_situations_get
+  - helper_ask_v1_helper_ask_post
+  - helper_privacy_v1_helper_privacy_get
+  - helper_outcome_v1_helper_outcome_post

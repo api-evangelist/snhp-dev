@@ -1,0 +1,95 @@
+generated: '2026-09-19'
+method: searched
+source: https://snhp.dev/llms.txt
+corroboration:
+  - 'openapi/snhp-dev-openapi.yml — operation descriptions of issue_key_v1_keys_post and negotiate_turn_endpoint_v1_negotiate_turn_post'
+  - https://github.com/ryuxik/snhp/blob/main/PRICING.md   # "Abuse resistance"
+  - 'live unauthenticated responses from https://snhp.dev on 2026-09-19'
+checked: '2026-09-19'
+summary: >-
+  Limits are published precisely and in three places (llms.txt "Cost model", the key-issuance
+  operation's own description, and the negotiate/turn description): an in-memory token bucket per
+  single instance giving 60 requests/min per IP to keyless callers, 600/min per key to callers who
+  send a gt_* key in a HEADER (a key in the request body "does NOT raise your limit"), 10/hour per
+  IP on key issuance, and — for the opt-in LLM dispute routes — 40/hour per IP plus a persistent
+  $5/day spend cap. The runtime signal is a 429 that "always carries Retry-After (whole seconds
+  until a token frees up)". No RateLimit-* or X-RateLimit-* headers were observed on a live 200
+  and the OpenAPI declares no 429 on any operation. The issued key's response carries
+  rate_limit_per_minute: 600 as a field.
+limit_count: 5
+scopes:
+  - scope: per-IP
+    tier: keyless (the free floor)
+    surface: 'all /v1/* calls'
+    window: 1 minute
+    limit: 60
+    unit: requests
+    burst: 'token bucket (burst size not published)'
+    status_on_exhaustion: 429
+    verbatim: 'keyless /v1/* calls:   60/min per IP   (the free floor)'
+    source: https://snhp.dev/llms.txt
+  - scope: per-key
+    tier: 'any gt_* key sent as a header'
+    surface: 'all /v1/* calls'
+    window: 1 minute
+    limit: 600
+    unit: requests
+    burst: 'token bucket (burst size not published)'
+    status_on_exhaustion: 429
+    verbatim: 'keyed /v1/* calls:    600/min per key  (send the key as a HEADER — `Authorization: Bearer gt_*` or `X-API-Key: gt_*`; a key in the request body does NOT raise your limit, it stays on the 60/min floor)'
+    source: https://snhp.dev/llms.txt
+    note: 'The key-issuance response echoes this as rate_limit_per_minute: 600 (operation description).'
+  - scope: per-IP
+    tier: keyless
+    surface: 'POST /v1/keys (issuance)'
+    window: 1 hour
+    limit: 10
+    unit: requests
+    status_on_exhaustion: 429
+    verbatim: 'POST /v1/keys:         10/hour per IP   (issuance is unauthenticated)'
+    source: https://snhp.dev/llms.txt
+  - scope: per-IP
+    tier: 'LLM extras (off by default)'
+    surface: '/v1/dispute/* drafting and coaching routes'
+    window: 1 hour
+    limit: 40
+    unit: requests
+    status_on_exhaustion: 429
+    verbatim: 'a per-IP hourly limit (SNHP_LLM_PER_IP_HOURLY, default 40)'
+    source: https://github.com/ryuxik/snhp/blob/main/PRICING.md
+  - scope: per-deployment
+    tier: 'LLM extras (off by default)'
+    surface: '/v1/dispute/* drafting and coaching routes'
+    window: 1 day
+    limit: '$5 USD of upstream LLM spend'
+    unit: dollars
+    status_on_exhaustion: 429
+    verbatim: 'a daily USD cap (SNHP_DAILY_LLM_USD, default $5) that persists across restarts ... Past the cap, calls 429.'
+    source: https://github.com/ryuxik/snhp/blob/main/PRICING.md
+headers:
+  documented: true
+  documented_headers: ['Retry-After  (on 429 only; whole seconds)']
+  observed: false
+  observed_note: >-
+    Live 200 responses on 2026-09-19 (POST /v1/negotiate/turn keyless, GET /health, GET
+    /v1/catalog) carried no rate-limit header of any family; the response header set is Fly.io's
+    (server, via, fly-request-id) plus the provider's security headers (strict-transport-security,
+    x-content-type-options, x-frame-options, referrer-policy, content-security-policy). No 429 was
+    provoked, so Retry-After was not observed directly.
+  absent_on_200:
+    - X-RateLimit-Limit
+    - X-RateLimit-Remaining
+    - X-RateLimit-Reset
+    - RateLimit
+    - RateLimit-Policy
+    - RateLimit-Limit
+statuses:
+  rate_limited: 429
+  rate_limited_note: 'Documented, not declared: no operation in the OpenAPI lists a 429 response (overlays/ proposes one).'
+implementation_note_verbatim: 'Rate limits (in-memory token bucket, per single instance)'
+implementation_reading: 'Per-instance in-memory buckets on a single deployment: limits are not shared across instances and reset on restart. The provider states both facts.'
+mcp_note: 'No separate limit is published for the MCP doors; the paid MCP tools take the same gt_* key as an argument, and the HTTP limiter "only reads headers", so whether an MCP call rides the 60/min or 600/min lane is not stated.'
+agent_guidance: >-
+  Issue a key once (POST /v1/keys, idempotent on agent_id for 24h) and send it in Authorization:
+  Bearer — that alone multiplies the ceiling by 10. On 429 sleep exactly Retry-After seconds. Do
+  not put the key in the body expecting a higher lane.

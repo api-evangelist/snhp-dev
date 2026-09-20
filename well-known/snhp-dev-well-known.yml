@@ -1,0 +1,185 @@
+generated: '2026-09-19'
+method: probed
+source: live probes of the named /.well-known/ path list on every host the record knows, 2026-09-19
+checked: '2026-09-19'
+summary: >-
+  Three real documents are served, all from the same FastAPI application and all byte-identical on
+  its four hostnames (snhp.dev, www.snhp.dev, api.snhp.dev, snhp.fly.dev): the A2A Agent Card at
+  the canonical /.well-known/agent-card.json (3,786 B, graded near-conformant in a2a/), an MCP
+  server card at /.well-known/mcp/server-card.json (49,409 B, SEP-1649 shape, carries the full
+  15-tool core inputSchema set) and a provider-invented agent-capability manifest at
+  /.well-known/agents.json (5,802 B, "schema": "agents.json/v0", endpoints + auth + payment + free
+  tool list). Nothing else on the named list is served anywhere: no RFC 9116 security.txt, no OIDC
+  discovery, no RFC 8414 / RFC 9728 OAuth metadata (the MCP server sits on these same hosts, so the
+  MCP-host probe IS this probe — and the server declares authentication.required=false, so the
+  absence is consistent), no api-catalog, no ai-plugin.json, no AAuth, no UCP/ACP, no apis.json at
+  either domain-root path. arena.snhp.dev, the separate Evolution Arena app, serves none of them.
+pointer_basis: >-
+  WellKnown is emitted on the strength of three served, parsing documents. SecurityTxt is NOT
+  emitted: no security.txt on any host. The agent card is registered separately as AgentCard via
+  a2a/snhp-dev-a2a.yml and the MCP server card is referenced from mcp/snhp-dev-mcp.yml.
+host_set_note: >-
+  Website, API baseURL, OpenAPI servers[] (added by us — the served spec declares none), the
+  Swagger/ReDoc docs host and the MCP server host (/mcp/ and /mcp/pro/) are all the same
+  application, reachable as snhp.dev, www.snhp.dev, api.snhp.dev (the host the official MCP
+  registry entry names) and snhp.fly.dev (the Fly.io origin the llms.txt curl examples use). The
+  second OpenAPI lives on arena.snhp.dev. par.snhp.dev 301s every path to arena.snhp.dev/par/...
+  which 301s back to par.snhp.dev — a redirect loop, recorded as status 301 with no document.
+  status.snhp.dev and gametheory.dev (the PyPI homepage) do not resolve.
+path_echo_control: passed
+path_echo_control_note: 'GET /.well-known/snhp-dev-negative-control-7f3ab91c.json -> 404 {"detail":"Not Found"} on all five hosts, so the 200s below are real documents, not a catch-all.'
+hosts:
+  - host: https://snhp.dev
+    roles: [website, api, docs, mcp, a2a-card]
+    documents:
+      - path: /.well-known/agent-card.json           # A2A 1.0.0 / RFC 8615
+        status: 200
+        file: ../a2a/snhp-dev-agent-card.json
+        content_type: application/json
+        bytes: 3786
+        note: Real AgentCard-shaped JSON object (protocolVersion 0.3.0, three skills, one extension). Graded in a2a/snhp-dev-a2a.yml.
+      - path: /.well-known/agent.json
+        status: 404
+      - path: /.well-known/mcp/server-card.json      # MCP server card, SEP-1649
+        status: 200
+        file: snhp-dev-mcp-server-card.json
+        content_type: application/json
+        bytes: 49409
+        note: >-
+          serverInfo {name gametheory, version 0.1.0}, authentication {required: false}, transport
+          streamable-http https://snhp.dev/mcp/ plus a transport_pro block for /mcp/pro/, registry
+          name io.github.ryuxik/snhp-negotiation, repository, icons, and the 15 core tools with full
+          inputSchema. Matches the live tools/list byte for byte on tool names.
+      - path: /.well-known/agents.json               # provider-invented agent-capability manifest
+        status: 200
+        file: snhp-dev-agents.json
+        content_type: application/json
+        bytes: 5802
+        note: >-
+          "schema": "agents.json/v0". Endpoints (http_base, mcp, mcp_pro, mcp_server_card, agent_card,
+          openapi, llms_txt, llms_full_txt, catalog, observatory), auth (api_key issued by POST /v1/keys
+          with human_required false, header forms, 50c starter credit), free_tools[] each mapped to an
+          HTTP endpoint AND an MCP tool name, wallet, capabilities (agent memory, receipted session),
+          payment (Stripe Checkout or MPP/SPT, 5% + 30c top-up fee, Ed25519 receipts) and the demand
+          box. Not a recognised standard; recorded because it is the richest single machine-readable
+          onboarding document the provider publishes and it is what the tool crosswalk binds against.
+      - path: /.well-known/security.txt              # RFC 9116
+        status: 404
+      - path: /.well-known/openid-configuration
+        status: 404
+      - path: /.well-known/oauth-authorization-server   # RFC 8414
+        status: 404
+      - path: /.well-known/oauth-protected-resource     # RFC 9728 — this host is also the MCP resource host
+        status: 404
+      - path: /.well-known/api-catalog
+        status: 404
+      - path: /.well-known/api-catalog.json
+        status: 404
+      - path: /.well-known/ai-plugin.json
+        status: 404
+      - path: /.well-known/aauth-resource.json
+        status: 404
+      - path: /.well-known/ucp.json
+        status: 404
+      - path: /.well-known/acp.json
+        status: 404
+      - path: /.well-known/apis.json
+        status: 404
+      - path: /apis.json
+        status: 404
+      - path: /apis.yml
+        status: 404
+      - path: /.well-known/jwks.json
+        status: 404
+        note: Not on the named list; probed because the API issues EdDSA-signed JWTs. Keys are published instead at GET /v1/keys/trust_anchor, /v1/keys/settlement_notary and /v1/store/notary_pubkey (all 200).
+  - host: https://www.snhp.dev
+    roles: [website-alias]
+    documents:
+      - {path: /.well-known/agent-card.json, status: 200, file: ../a2a/snhp-dev-agent-card.json, content_type: application/json, bytes: 3786, note: byte-identical to snhp.dev}
+      - {path: /.well-known/agent.json, status: 404}
+      - {path: /.well-known/mcp/server-card.json, status: 200, file: snhp-dev-mcp-server-card.json, bytes: 49409}
+      - {path: /.well-known/agents.json, status: 200, file: snhp-dev-agents.json, bytes: 5802}
+      - {path: /.well-known/security.txt, status: 404}
+      - {path: /.well-known/openid-configuration, status: 404}
+      - {path: /.well-known/oauth-authorization-server, status: 404}
+      - {path: /.well-known/oauth-protected-resource, status: 404}
+      - {path: /.well-known/api-catalog, status: 404}
+      - {path: /.well-known/api-catalog.json, status: 404}
+      - {path: /.well-known/ai-plugin.json, status: 404}
+      - {path: /.well-known/aauth-resource.json, status: 404}
+      - {path: /.well-known/ucp.json, status: 404}
+      - {path: /.well-known/acp.json, status: 404}
+      - {path: /.well-known/apis.json, status: 404}
+      - {path: /apis.json, status: 404}
+      - {path: /apis.yml, status: 404}
+  - host: https://api.snhp.dev
+    roles: [api-alias, mcp-registry-host]
+    note: The host the official MCP registry entry (io.github.ryuxik/snhp) names as the streamable-http remote, https://api.snhp.dev/mcp/. Same application.
+    documents:
+      - {path: /.well-known/agent-card.json, status: 200, file: ../a2a/snhp-dev-agent-card.json, content_type: application/json, bytes: 3786, note: byte-identical to snhp.dev}
+      - {path: /.well-known/agent.json, status: 404}
+      - {path: /.well-known/mcp/server-card.json, status: 200, file: snhp-dev-mcp-server-card.json, bytes: 49409}
+      - {path: /.well-known/agents.json, status: 200, file: snhp-dev-agents.json, bytes: 5802}
+      - {path: /.well-known/security.txt, status: 404}
+      - {path: /.well-known/openid-configuration, status: 404}
+      - {path: /.well-known/oauth-authorization-server, status: 404}
+      - {path: /.well-known/oauth-protected-resource, status: 404}
+      - {path: /.well-known/api-catalog, status: 404}
+      - {path: /.well-known/api-catalog.json, status: 404}
+      - {path: /.well-known/ai-plugin.json, status: 404}
+      - {path: /.well-known/aauth-resource.json, status: 404}
+      - {path: /.well-known/ucp.json, status: 404}
+      - {path: /.well-known/acp.json, status: 404}
+      - {path: /.well-known/apis.json, status: 404}
+      - {path: /apis.json, status: 404}
+      - {path: /apis.yml, status: 404}
+  - host: https://snhp.fly.dev
+    roles: [origin]
+    note: Fly.io origin hostname; the llms.txt "30-second integration" curl examples use it. Same application.
+    documents:
+      - {path: /.well-known/agent-card.json, status: 200, file: ../a2a/snhp-dev-agent-card.json, content_type: application/json, bytes: 3786, note: byte-identical to snhp.dev}
+      - {path: /.well-known/agent.json, status: 404}
+      - {path: /.well-known/mcp/server-card.json, status: 200, file: snhp-dev-mcp-server-card.json, bytes: 49409}
+      - {path: /.well-known/agents.json, status: 200, file: snhp-dev-agents.json, bytes: 5802}
+      - {path: /.well-known/security.txt, status: 404}
+      - {path: /.well-known/openid-configuration, status: 404}
+      - {path: /.well-known/oauth-authorization-server, status: 404}
+      - {path: /.well-known/oauth-protected-resource, status: 404}
+      - {path: /.well-known/api-catalog, status: 404}
+      - {path: /.well-known/api-catalog.json, status: 404}
+      - {path: /.well-known/ai-plugin.json, status: 404}
+      - {path: /.well-known/aauth-resource.json, status: 404}
+      - {path: /.well-known/ucp.json, status: 404}
+      - {path: /.well-known/acp.json, status: 404}
+      - {path: /.well-known/apis.json, status: 404}
+      - {path: /apis.json, status: 404}
+      - {path: /apis.yml, status: 404}
+  - host: https://arena.snhp.dev
+    roles: [arena-api, arena-docs]
+    note: A separate FastAPI application ("SNHP Evolution Arena", its own /openapi.json and /llms.txt, no MCP — POST /mcp/ answers 405).
+    documents:
+      - {path: /.well-known/agent-card.json, status: 404}
+      - {path: /.well-known/agent.json, status: 404}
+      - {path: /.well-known/mcp/server-card.json, status: 404}
+      - {path: /.well-known/agents.json, status: 404}
+      - {path: /.well-known/security.txt, status: 404}
+      - {path: /.well-known/openid-configuration, status: 404}
+      - {path: /.well-known/oauth-authorization-server, status: 404}
+      - {path: /.well-known/oauth-protected-resource, status: 404}
+      - {path: /.well-known/api-catalog, status: 404}
+      - {path: /.well-known/api-catalog.json, status: 404}
+      - {path: /.well-known/ai-plugin.json, status: 404}
+      - {path: /.well-known/aauth-resource.json, status: 404}
+      - {path: /.well-known/ucp.json, status: 404}
+      - {path: /.well-known/acp.json, status: 404}
+      - {path: /.well-known/apis.json, status: 404}
+      - {path: /apis.json, status: 404}
+      - {path: /apis.yml, status: 404}
+  - host: https://par.snhp.dev
+    roles: [redirect-loop]
+    note: 'Every path 301s to https://arena.snhp.dev/par/<path>, which 301s back to par.snhp.dev — a loop; no document is reachable. Recorded as 301, no file.'
+    documents:
+      - {path: /.well-known/agent-card.json, status: 301}
+      - {path: /.well-known/security.txt, status: 301}
+      - {path: /openapi.json, status: 301}
+      - {path: /llms.txt, status: 301}

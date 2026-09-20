@@ -1,4 +1,4 @@
-# Negotiation Copilot for Agents (SNHP)
+# SNHP
 
 <!-- API-EVANGELIST-PROVENANCE:BEGIN -->
 > ### About this repository
@@ -64,5 +64,48 @@
 > Full detail: **[Where this data comes from](https://apievangelist.com/about/where-our-data-comes-from)**
 <!-- API-EVANGELIST-PROVENANCE:END -->
 
-Negotiation Copilot for Agents (SNHP) is a company surfaced via the API Evangelist harvest backlog (source: a2a-registry) and added to the network as a stub for full-pipeline profiling.
+SNHP (snhp.dev) is free, LLM-free game-theory negotiation math for AI agents — the math-optimal
+next move in a single-price or multi-issue negotiation, auctions and mechanism design — served as
+a REST API, a hosted MCP server (core and pro doors), a PyPI package, and behind an A2A agent card,
+with a prepaid wallet (Stripe Checkout or the Machine Payments Protocol) for $2 receipted sessions
+and encrypted agent memory. Operated by gametheory.dev / github.com/ryuxik. Surfaced by the
+a2aregistry.org harvest of 2026-09-19 as "Negotiation Copilot for Agents (SNHP)".
+
 - https://snhp.dev/
+- https://snhp.dev/docs — Swagger UI over the live OpenAPI
+- https://snhp.dev/llms.txt
+- https://github.com/ryuxik/snhp
+
+## What this profile holds
+
+Profiled 2026-09-19. Every artifact below was searched, probed or derived from public surfaces —
+see each file's `method:` and `source:` frontmatter. One free, keyless, documented quickstart call
+(`POST /v1/negotiate/turn`) and one read-only MCP `tools/call` (`store_catalog`) were made; no
+key was minted, no wallet funded, no paid or mutating operation exercised.
+
+| Surface | Where |
+|---|---|
+| OpenAPI 3.1.0 — Game Theory Layer (74 operations, 78 schemas) and Evolution Arena (31 operations) | `openapi/` — verbatim originals in `openapi/_original/` |
+| Proposed spec enhancements (servers, the two documented key schemes on 25 gated operations, 7 undeclared tags, the 429, the observed 402 problem+json) | `overlays/` |
+| A2A agent card — served at the canonical path, **near-conformant** (no preferredTransport); its `url` is not an A2A endpoint | `a2a/` |
+| Hosted MCP server — live, anonymous, core door 15 annotated tools + pro door 54; server card; official-registry entry | `mcp/` (raw `tools/list` for both doors + `initialize` saved) |
+| MCP ↔ REST tool crosswalk (48 tools bound, 6 MCP-only, 38 of 74 operations reachable by tool; no key issuance over MCP) | `mcp/` |
+| Six generated Agent Skills — free negotiate/bundle, the $2 receipted session with both funding rails, agent memory, verified-peer A2A + AP2 settlement, telemetry opt-in + GDPR erase | `skills/` |
+| llms.txt (snhp.dev and arena.snhp.dev, provider-published) | `llms/` |
+| `/.well-known/` probe across 6 hosts — agent card, MCP server card and agents.json served; nothing else | `well-known/` |
+| Auth (documented but undeclared gt_* key; MPP payment challenge), conventions (idempotency partial, reversibility documented), errors, data model | `authentication/`, `conventions/`, `errors/`, `data-model/` |
+| Plans (free core, $2 session, $0.005/$0.01 memory park, 5% + 30¢ top-up fee, one disputed line item), five published rate limits, best-effort SLA stated in the API, repository changelog | `plans/`, `rate-limits/`, `lifecycle/`, `changelog/` |
+| No test mode — free production math, $0.50 starter credit, Swagger UI, synthetic-data dispute prototype | `sandbox/` |
+| Packages — PyPI `snhp` 0.2.0 (library + stdio MCP server + API server); stale gametheory.dev URLs in its metadata | `packages/` |
+| Domain security (TLS 1.3, HSTS, no SPF/DMARC/CAA/DNSSEC); no disclosure program or trust page found | `security/` |
+| Horizontal regulatory posture — one signal, GDPR Art. 15/17 as API operations; no legal pages at all | `regulatory/` |
+| Standards conformance incl. the two domain standards declared in the contract (MPP, AP2) and what is **not** conformant | `conformance/` |
+| Recommended agentic-access execution contracts (generated, 105 operations) | `agentic-access/` |
+
+Headline findings: the served OpenAPI declares no servers and no security while ~25 operations
+require a key (a missing key answers 422, not 401); the A2A card advertises a REST + MCP surface
+rather than an A2A endpoint (POST to its `url` → 405); exactly one write is idempotent (key
+issuance, 24 h on `agent_id`); wallet credit is prepaid and non-refundable and the only windowed
+reversal is telemetry erasure (78 weeks); and the provider publishes its prices, its SLA ("no
+uptime SLA today — best-effort, single deployment"), its receipt-verification recipe and its GDPR
+endpoints inside the API itself while serving no terms, privacy or security page.

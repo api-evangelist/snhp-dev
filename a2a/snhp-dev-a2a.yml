@@ -1,0 +1,151 @@
+generated: '2026-09-19'
+method: probed
+source: https://snhp.dev/.well-known/agent-card.json
+checked: '2026-09-19'
+discovery:
+  path: /.well-known/agent-card.json
+  canonical: true
+  host: snhp.dev
+  note: >-
+    The same 3,786-byte card is served byte-identically on every host the provider runs the API
+    from — snhp.dev, www.snhp.dev, api.snhp.dev and the Fly.io origin snhp.fly.dev (all HTTP 200,
+    application/json). The legacy /.well-known/agent.json path 404s on all of them. arena.snhp.dev
+    (the separate Evolution Arena application) serves no card. The OpenAPI itself declares the card
+    as an operation (agent_card__well_known_agent_card_json_get), and llms.txt and
+    /.well-known/agents.json both link to it.
+conformance:
+  spec: A2A 1.0.0
+  grade: near-conformant
+  grade_basis: >-
+    All three hard checks pass: capabilities is an OBJECT ({streaming: false, pushNotifications:
+    false, extensions: [...]}), protocolVersion is present ("0.3.0"), and skills is an ARRAY of three
+    entries each carrying id, name, description and tags. defaultInputModes and defaultOutputModes
+    are both present ([application/json]). preferredTransport is ABSENT, which is the one optional
+    field that separates near-conformant from conformant under the rubric, so the card is graded
+    near-conformant rather than conformant.
+  protocol_version: 0.3.0
+  preferred_transport: null
+  deviations:
+    - id: no-preferredTransport
+      severity: soft
+      detail: 'No preferredTransport and no additionalInterfaces[]; a consumer cannot tell from the card which A2A binding (JSONRPC / GRPC / HTTP+JSON) the url speaks.'
+    - id: url-is-not-an-a2a-endpoint
+      severity: hard-in-practice
+      detail: >-
+        The card's url is https://snhp.dev, the website/API root. A JSON-RPC message/send POSTed to
+        it answers HTTP 405 {"detail":"Method Not Allowed"}; POST /a2a, /a2a/, /v1/a2a and /v1/a2a/
+        all 404. There is no A2A protocol endpoint on this host. What the provider calls its "A2A
+        flow" is a set of ordinary REST operations — POST /v1/registry/register_operator,
+        /v1/registry/request_domain_challenge, /v1/registry/verify_domain, /v1/a2a/open_session,
+        /v1/a2a/next_offer and /v1/a2a/settle — all present in the OpenAPI, plus one local signing
+        step (gt_a2a_build_peer_proof) that exists only as an MCP tool. The card is therefore a
+        discovery document for a REST + MCP surface, not for an A2A task endpoint; an A2A client
+        that follows url and sends tasks will get nowhere.
+    - id: extension-carries-non-schema-keys
+      severity: soft
+      detail: >-
+        capabilities.extensions[0] declares uri https://snhp.dev/a2a/negotiation/v1 (which 404s —
+        extension URIs are identifiers and need not resolve, noted, not penalised), required: false,
+        a description, a `params` object (allowed by AgentExtension) and a `flow[]` array of six
+        ordered steps, which is not an AgentExtension field. The params object carries the six
+        endpoint URLs plus two Ed25519 public keys in PEM (trust_anchor_public_key_pem,
+        settlement_notary_public_key_pem) — public verification keys, appropriate to publish.
+    - id: no-provider-block
+      severity: soft
+      detail: 'No provider {organization, url}; the operator is identifiable only from the site (github.com/ryuxik, ryuxik@gmail.com) and the PyPI/NOTICE author "gametheory.dev".'
+    - id: no-securitySchemes
+      severity: soft
+      detail: 'No securitySchemes / security. The REST operations the extension points at take an optional Bearer gt_* / X-API-Key key (see authentication/); the card says nothing about it.'
+    - id: skills-carry-no-examples
+      severity: soft
+      detail: 'All three skills omit examples[] and inputModes/outputModes; the negotiate_turn description embeds a worked example in prose instead ("sell, walk_away=4000, target=6000, counterparty_offers=[4200,4500] -> counter ~$5,387").'
+    - id: protocolVersion-0.3.0
+      severity: informational
+      detail: 'The card pins protocolVersion 0.3.0, the version at which the /.well-known/agent-card.json path was introduced; it is served at the canonical path.'
+card:
+  name: Negotiation Copilot for Agents (SNHP)
+  description: >-
+    Get the math-optimal next move in a single-price negotiation, in plain dollars. Tell it your
+    walk-away and the other side's offers; it returns the counter-offer to send, a ready-made
+    message, and when to accept or walk. Validated ~12% better head-to-head (n=20 paired LLM
+    negotiations, 95% CI +6.5-17.4%, p<0.0001). Any counterparty.
+  url: https://snhp.dev
+  version: 0.1.0
+  protocol_version: 0.3.0
+  preferred_transport: absent
+  default_input_modes: [application/json]
+  default_output_modes: [application/json]
+  capabilities:
+    streaming: false
+    push_notifications: false
+    extensions: 1
+  security_schemes: none-declared
+  skills: 3
+  file: snhp-dev-agent-card.json
+skills:
+  - {id: negotiate_turn, name: Price negotiation (plain dollars), endpoint_in_description: 'https://snhp.dev/v1/negotiate/turn', tags: [negotiation, bargaining, pricing, haggling, deals]}
+  - {id: negotiate_bundle, name: Multi-issue negotiation (logrolling), endpoint_in_description: 'https://snhp.dev/v1/negotiate/bundle', tags: [negotiation, multi-issue, logrolling, contract, bundle]}
+  - {id: settle, name: AP2 settlement (advanced), endpoint_in_description: null, tags: [payments, ap2]}
+extension:
+  uri: https://snhp.dev/a2a/negotiation/v1
+  required: false
+  purpose: >-
+    Verified-peer negotiation between two agents that BOTH run SNHP: each operator registers an
+    Ed25519 identity (optionally domain-verified through a DNS-TXT challenge), each side signs a
+    short-lived per-negotiation peer proof locally, one side opens a session with both proofs and
+    the server derives peer_mode, offers are recommended under that mode, and settlement mints a
+    signed AP2 Cart Mandate (and an Intent Mandate when buyer_max_price is passed). Full guide in
+    the repository at gametheory/server/A2A_FLOW.md.
+  flow_steps: 6
+  rest_operations_in_openapi:
+    - register_operator_v1_registry_register_operator_post
+    - request_domain_challenge_v1_registry_request_domain_challenge_post
+    - verify_domain_v1_registry_verify_domain_post
+    - open_session_v1_a2a_open_session_post
+    - next_offer_v1_a2a_next_offer_post
+    - settle_v1_a2a_settle_post
+  mcp_only_step: gt_a2a_build_peer_proof (signs with the operator private key; the provider says to run the MCP server on your own host so the key never leaves it)
+  public_keys_published:
+    - {name: trust_anchor_public_key_pem, also_at: 'GET /v1/keys/trust_anchor', algorithm: Ed25519}
+    - {name: settlement_notary_public_key_pem, also_at: 'GET /v1/keys/settlement_notary', algorithm: Ed25519}
+  settlement_standard: 'AP2 (Agent Payments Protocol) Cart / Intent mandates as VC-JWTs — see conformance/'
+interpretation: >-
+  A real, provider-served card whose shape is close to conformant and whose SUBSTANCE points
+  somewhere else: at a REST API and an MCP server rather than an A2A task endpoint. It is best read
+  as the provider's advertisement, in A2A vocabulary, of a negotiation-math service plus an
+  optional bilateral identity-and-settlement extension. The three skills are accurate descriptions
+  of three REST operations. Nothing here is manufactured by us; the grade and the deviations are
+  recorded as observed, and the missing A2A endpoint is the provider's to add if it wants A2A
+  clients to reach it.
+x-evidence:
+  fetched: '2026-09-19'
+  url: https://snhp.dev/.well-known/agent-card.json
+  http_status: 200
+  content_type: application/json
+  bytes: 3786
+  server: Fly/57f2b87df (2026-09-16)
+  body_shape: JSON object carrying protocolVersion, name, description, url, version, defaultInputModes, defaultOutputModes, capabilities{streaming, pushNotifications, extensions[1]}, skills[3]
+  negative_control:
+    url: https://snhp.dev/.well-known/snhp-dev-negative-control-7f3ab91c.json
+    status: 404
+    body: '{"detail":"Not Found"}'
+    content_type: application/json
+    verdict: Host 404s a path that cannot exist, so the 200 above is a genuine served document and not a catch-all.
+  legacy_path:
+    url: https://snhp.dev/.well-known/agent.json
+    status: 404
+  mirrors:
+    - {url: 'https://www.snhp.dev/.well-known/agent-card.json', status: 200, bytes: 3786}
+    - {url: 'https://api.snhp.dev/.well-known/agent-card.json', status: 200, bytes: 3786}
+    - {url: 'https://snhp.fly.dev/.well-known/agent-card.json', status: 200, bytes: 3786}
+    - {url: 'https://arena.snhp.dev/.well-known/agent-card.json', status: 404}
+  a2a_endpoint_probes:
+    - {request: 'POST https://snhp.dev/ (JSON-RPC message/send)', status: 405, body: '{"detail":"Method Not Allowed"}'}
+    - {request: 'POST https://snhp.dev/a2a', status: 404}
+    - {request: 'POST https://snhp.dev/v1/a2a', status: 404}
+  registry_listing:
+    registry: a2aregistry.org
+    note: >-
+      Surfaced by the a2aregistry.org harvest of 2026-09-19 (415 agents), which recorded this card
+      URL and one agent named "Negotiation Copilot for Agents (SNHP)" under author "Unknown". The
+      operator is not unknown: the site, NOTICE and PyPI name gametheory.dev / github.com/ryuxik.

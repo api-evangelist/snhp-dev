@@ -1,0 +1,157 @@
+generated: '2026-09-19'
+method: searched
+source: >-
+  openapi/snhp-dev-openapi.yml (live from https://snhp.dev/openapi.json), https://snhp.dev/llms.txt,
+  https://snhp.dev/.well-known/agents.json, GET /v1/store/catalog, GET /v1/mpp/manifest, the
+  repository PRICING.md, and live unauthenticated responses from snhp.dev on 2026-09-19.
+checked: '2026-09-19'
+summary: >-
+  A FastAPI service whose cross-cutting contract lives almost entirely in prose and in the
+  provider's own manifests rather than in the OpenAPI. Auth is an optional gt_* key (header
+  preferred, body tolerated); versioning is a /v1 path prefix at product version 0.1.0; errors are
+  FastAPI's {"detail": ...} envelope except for the MPP payment challenge, which is a proper RFC
+  9457 application/problem+json body with a WWW-Authenticate: Payment header; rate limiting is a
+  documented token bucket that signals only with 429 + Retry-After. The two things an agent most
+  needs to know before it acts: idempotency exists on exactly ONE operation (key issuance, keyed on
+  agent_id for 24h), and money is one-way — wallet credit is "PREPAID and NON-REFUNDABLE", keys die
+  instantly on rotation, and the only windowed reversal anywhere is GDPR erasure of telemetry
+  rows. The provider's own safety rule partly compensates: a paid call "settles only when a
+  machine-checkable outcome is delivered", so a failed paid call is an uncharged 200 {ok:false,
+  charged:false}.
+base_url: https://snhp.dev
+api_style: REST over HTTPS, JSON requests and responses; MCP over streamable HTTP at /mcp/ and /mcp/pro/
+authentication:
+  style: optional_api_key
+  header: 'Authorization: Bearer gt_*  (or X-API-Key: gt_*)'
+  body_fallback: api_key
+  self_serve: 'POST /v1/keys, no human, no card'
+  see: authentication/snhp-dev-authentication.yml
+versioning:
+  api: path-segment
+  api_detail: '/v1/ on 63 of 74 operations; the other 11 are discovery documents (/health, /llms.txt, /llms-full.txt, /PRICING.md, /.well-known/*, /docs, /openapi.json).'
+  product_version: 0.1.0
+  product_version_sources: ['openapi info.version', '/health {"status":"ok","version":"0.1.0"}', 'agent card version', 'MCP server card serverInfo.version', '/v1/catalog version']
+  stability_flags: '/v1/catalog marks each tool stability: stable | beta (gt.negotiate.turn stable, gt.negotiate.bundle beta) — the only per-operation maturity signal.'
+  see: lifecycle/snhp-dev-lifecycle.yml
+idempotency:
+  coverage: partial
+  header: null
+  scope:
+    - issue_key_v1_keys_post
+  retention: '24 hours'
+  mechanism: 'Natural-key deduplication: POST /v1/keys is "Idempotent on agent_id within 24h" (operation description). A repeat issuance for the same agent_id inside the window returns the existing key rather than minting a second one.'
+  detail: >-
+    No Idempotency-Key header or client request id exists on any operation. Of the ~40 mutating
+    operations, exactly one documents replay protection. The MCP core door annotates session_close
+    idempotentHint: true and every other write idempotentHint: false, which agrees with the REST
+    picture. Consequences for a retried write: a second POST /v1/advice/session opens a second $2
+    session; a second POST /v1/store/park stores (and charges for) a second blob; a second POST
+    /v1/keys/rotate rotates again and kills the key you just received; a second
+    /v1/registry/register_operator re-registers. The provider's settle-on-delivery rule bounds the
+    cost of a FAILED retry (uncharged) but not of a duplicated SUCCESS.
+  agent_guidance: >-
+    Never blind-retry a paid write on timeout. Read state first — GET /v1/billing/balance shows
+    whether the wallet moved; session_advise with the session_id shows whether a session opened;
+    memory_load with the ticket shows whether a park landed. Key issuance IS safe to retry within
+    24 hours for the same agent_id.
+dry_run_mode:
+  available: false
+  detail: >-
+    No dry-run, validate-only or preview flag. The nearest things are structural: the FREE
+    /v1/negotiate/turn is an unreceipted, non-deterministic rehearsal of the $2 receipted session
+    (the response says so in a paid_alternative field), and /v1/store/catalog publishes every
+    slot's max price before a call is made. Neither is a dry run of a specific write.
+reversibility:
+  grade: documented
+  write_surface_count: 40
+  reversal_operations:
+    - operation: telemetry_delete_v1_telemetry_delete_delete
+      reverses: 'Opt-in telemetry rows written by share_outcome recommendations and report_outcome'
+      window: '78 weeks — "Sweeps the last 78 weeks of week-hashes" (llms.txt, GDPR section)'
+      window_source: https://snhp.dev/llms.txt
+      stated: true
+    - operation: rotate_key_v1_keys_rotate_post
+      reverses: 'A compromised key (revocation by replacement); balance carries over'
+      window: 'immediate, no grace period; the OLD key cannot be restored'
+      window_source: openapi/snhp-dev-openapi.yml#rotate_key_v1_keys_rotate_post
+      stated: true
+      note: A revocation path, not an undo — the rotation itself is irreversible.
+    - operation: close_advice_session_v1_advice_close_post
+      reverses: 'Nothing financial — closes a session that would otherwise expire on its own; idempotent'
+      window: '7 days (the session''s own lifetime)'
+      stated: true
+  non_reversible:
+    - {surface: 'wallet top-ups (checkout_session, agentic_topup, mpp_topup)', statement_verbatim: 'funded credit is PREPAID and NON-REFUNDABLE — there is no cashout path; unspent credit stays as credit', source: 'GET /v1/store/catalog no_refund'}
+    - {surface: '$2 session open (open_advice_session)', statement: 'Anchor SKUs charge their full price up front; no refund path is published. The $2 is spent when the session opens.', source: PRICING.md}
+    - {surface: 'memory_save / store_park', statement: 'Charged once on durable store; the blob expires by TTL (60 s min, 86,400 s default, 604,800 s max) — an expiry, not a delete. No delete operation.', source: 'GET /v1/store/catalog slots[locker].ttl'}
+    - {surface: 'AP2 settle (settle_v1_a2a_settle_post)', statement: 'Emits a signed Cart Mandate "the mandate is the settlement"; no void/cancel operation. The provider says "No escrow, no settlement" of funds — the mandate is a record, not a money movement.', source: 'operation description; llms.txt "Honest limitations"'}
+    - {surface: 'register_operator / verify_domain', statement: 'No deregister or key-revoke operation for operator identities.', source: openapi/snhp-dev-openapi.yml}
+    - {surface: 'store_request (demand box filings)', statement: 'No withdraw; the filing is public in the tally by normalized text.', source: openapi/snhp-dev-openapi.yml}
+  detail: >-
+    Graded `documented` rather than `verified`: a reversal path with a stated window exists
+    (telemetry erasure, 78 weeks), so the grade is above none, but it covers the one write surface
+    that carries no money, while every surface that DOES move money — top-ups, the $2 session,
+    the park fee — is explicitly non-refundable and the settlement mandate has no void. Crediting
+    `verified` on the telemetry window alone would overstate what an agent can take back.
+  agent_guidance: >-
+    Treat every paid call as final and every credit as spent the moment it lands. Size top-ups to
+    immediate need (the provider says the same: "$2 custom minimum lets you buy small"). Before
+    session_open confirm the category/side/walk_away are right — there is no edit. Telemetry is the
+    one thing you can erase, and only within 78 weeks.
+pagination:
+  style: none
+  applicable: minimal
+  detail: >-
+    The list-shaped reads — GET /v1/store/requests (public tally), /v1/store/my_requests,
+    /v1/store/observatory, /v1/rent/metros, /v1/helper/situations, /v1/telemetry/export — return
+    complete arrays with no limit, cursor, offset or page parameter and no next link. Export is
+    bounded by the provider's own retention (78 weeks of week-hashes). The observatory says
+    `recent` is a bounded slice; the bound is not published.
+field_expansion: {supported: false}
+sparse_fields: {supported: false}
+metadata:
+  supported: false
+  note: 'No free-form metadata field. Sessions carry `item` (free text describing what is negotiated) and telemetry carries an allowlisted `vertical` enum — labels, not metadata.'
+request_tracing:
+  request_id_header: none
+  observed: 'Only Fly.io''s fly-request-id on responses. No X-Request-Id in or out.'
+  correlation_ids: 'X-GT-Recommendation-Id: rec_* is returned on successful recommendation responses when telemetry is opted in — a domain correlation id needed for /v1/telemetry/report_outcome (must be posted within the same ISO week), not a request trace id. Receipts carry context_hash and a blake2b-128 content_hash for offline audit.'
+error_envelope:
+  media_type: application/json
+  rest_shape: '{"detail": string | ValidationError[]}'
+  rest_note: >-
+    FastAPI default. 422 carries [{type, loc[], msg, input, ctx?}] (HTTPValidationError, declared
+    on 48 operations); 404 is {"detail":"Not Found"}; 405 is {"detail":"Method Not Allowed"};
+    missing credentials surface as 422 "Field required" on header X-API-Key or body api_key, not
+    as 401.
+  rfc9457: partial
+  rfc9457_note: >-
+    ONE surface is RFC 9457: POST /v1/mpp/topup without a payment credential returns 402 with
+    content-type application/problem+json and {type: https://paymentauth.org/problems/payment-required,
+    title, status, detail, challengeId, price_cents, base_cents, fee_cents, counter_fee_pct}. The
+    spec declares the 402 but with an empty content object.
+  uncharged_failure_shape: 'Paid store calls that fail return HTTP 200 {ok:false, charged:false, reason, code} — a business-outcome envelope under a success status. An agent must read `ok`, not the status code.'
+  mcp_shape: 'JSON-RPC 2.0 over SSE frames ("event: message" / "data: {...}"); tool errors arrive as result.isError = true with text content.'
+  see: errors/snhp-dev-problem-types.yml
+rate_limit_signaling:
+  status_on_exhaustion: 429
+  headers: ['Retry-After  (documented: "A 429 always carries Retry-After (whole seconds until a token frees up)")']
+  headers_absent_on_200: [X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset, RateLimit, RateLimit-Policy]
+  published_limits: '60/min per IP keyless; 600/min per key (header only); POST /v1/keys 10/hour per IP; LLM dispute routes 40/hour per IP + $5/day cap.'
+  see: rate-limits/snhp-dev-rate-limits.yml
+content_negotiation:
+  request: application/json
+  response: 'application/json (REST); text/plain for /llms.txt, /llms-full.txt and the two key PEM endpoints; application/problem+json on the 402; text/event-stream (MCP)'
+payments:
+  human: 'POST /v1/billing/checkout_session -> Stripe Checkout URL'
+  agent_native: 'MPP (Machine Payments Protocol, Stripe Shared Payment Token): GET /v1/mpp/manifest, then POST /v1/mpp/topup -> 402 challenge -> Authorization: Payment <SPT> -> Payment-Receipt header'
+  unit: 'millicents (1000 per cent)'
+  fee: '5% + 30c per top-up; calls settle at wholesale passthrough'
+  receipts: 'Ed25519-signed, verifiable offline; signer pinned at GET /v1/store/notary_pubkey'
+  see: plans/snhp-dev-plans-pricing.yml
+webhooks:
+  outbound: none
+  note: 'POST /v1/billing/webhook is an INBOUND Stripe webhook receiver the provider consumes; the agent card declares pushNotifications: false; store_my_requests says status watching is "poll-based, no push". No AsyncAPI, no event surface — asyncapi/ intentionally absent.'
+determinism:
+  free_tools: 'non-deterministic (wall-clock compute budget); the response says "This free turn is unreceipted and non-deterministic".'
+  paid_sessions: 'deterministic — "fixed 400k-rollout budget + seed: same context in, bit-identical advice out, auditable via context_hash".'

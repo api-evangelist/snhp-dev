@@ -1,0 +1,141 @@
+generated: '2026-09-19'
+method: probed
+status: published
+source: https://snhp.dev/mcp/
+checked: '2026-09-19'
+summary: >-
+  SNHP runs a live, hosted, streamable-HTTP MCP server with TWO doors on the same application:
+  the CORE door at https://snhp.dev/mcp/ (15 "hero-first" tools) and the PRO door at
+  https://snhp.dev/mcp/pro/ (54 tools — the same 15 plus 39 legacy gt_* names, the verified-peer
+  A2A flow, first-strike attestation, auction design/simulation, the offer-graph engine and
+  "pondering" sessions). Both completed the initialize handshake (protocolVersion 2025-06-18,
+  serverInfo gametheory / gametheory-pro, version 1.28.1) with no credentials, answered tools/list
+  cold — no session id required — with real tools carrying inputSchema and (core door) annotations,
+  and a read-only tools/call of store_catalog succeeded anonymously. resources/list and
+  prompts/list are empty. The identical server also answers on api.snhp.dev/mcp/ (the host the
+  official MCP registry names), www.snhp.dev and snhp.fly.dev. A stdio twin ships on PyPI as
+  `snhp` (`uvx snhp`), listed on Smithery and Glama, so the deployment mode is BOTH.
+deployment:
+  mode: both
+  endpoint: https://snhp.dev/mcp/
+  endpoint_pro: https://snhp.dev/mcp/pro/
+  endpoint_aliases:
+    - https://api.snhp.dev/mcp/        # named by the official MCP registry entry
+    - https://www.snhp.dev/mcp/
+    - https://snhp.fly.dev/mcp/
+  install: uvx snhp
+  install_alternatives:
+    - pip install snhp && snhp
+    - pip install snhp && gametheory-mcp
+  package: https://pypi.org/project/snhp/
+  package_version: 0.2.0
+  package_published: '2026-07-10'
+  client_config_verbatim: '{ "mcpServers": { "snhp": { "command": "uvx", "args": ["snhp"] } } }'
+  auth: none
+  auth_note: >-
+    The server card declares authentication {required: false, schemes: []} and no credential,
+    challenge or WWW-Authenticate was seen on initialize, tools/list, resources/list, prompts/list
+    or the read-only store_catalog call. The seven free math tools take no key at all. The paid
+    tools (memory_save, session_open/advise/bundle/close, store_request with watch) take a gt_*
+    api_key as a TOOL ARGUMENT — an application-level key inside the JSON-RPC params, not a
+    transport credential — and the key itself is issued with no human by POST /v1/keys. No
+    /.well-known/oauth-protected-resource is served (well-known/). No mutating tool was called.
+  verified: probed
+  probe:
+    initialize:
+      request: 'POST https://snhp.dev/mcp/ {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18",...}}'
+      accept: application/json, text/event-stream
+      status: 200
+      content_type: text/event-stream
+      session_header: none issued
+      credentials_sent: none
+      raw: snhp-dev-mcp-initialize.json
+    tools_list_core:
+      request: 'POST https://snhp.dev/mcp/ tools/list (cold, no prior initialize)'
+      status: 200
+      tool_count: 15
+      raw_manifest: snhp-dev-mcp-tools.json
+    tools_list_pro:
+      request: 'POST https://snhp.dev/mcp/pro/ tools/list (cold)'
+      status: 200
+      tool_count: 54
+      raw_manifest: snhp-dev-mcp-pro-tools.json
+    tools_call_read_only:
+      request: 'POST tools/call {"name":"store_catalog","arguments":{}}'
+      status: 200
+      isError: false
+      note: Returned the same JSON as GET /v1/store/catalog (unit, counter_fee, starter_credit, slots[], receipts block).
+    resources_list: {status: 200, count: 0}
+    prompts_list: {status: 200, count: 0}
+    session_required: false
+    session_note: >-
+      A cold tools/list with no session succeeds, unlike servers that demand initialize first; the
+      transport is stateless streamable-HTTP framed as SSE ("event: message" lines).
+    checked: '2026-09-19'
+server:
+  name: gametheory
+  name_pro: gametheory-pro
+  title: SNHP — free negotiation math + agent memory
+  version: 1.28.1
+  version_note: 'serverInfo.version 1.28.1 tracks the Python `mcp` SDK (pyproject pins mcp>=1.27); the product version is 0.1.0 (server card, /health, OpenAPI) and the PyPI package is 0.2.0.'
+  protocol_version: '2025-06-18'
+  transport: streamable-http
+  url: https://snhp.dev/mcp/
+  capabilities:
+    tools: {listChanged: false}
+    resources: {listChanged: false, subscribe: false}
+    prompts: {listChanged: false}
+    experimental: {}
+  resources: 0
+  prompts: 0
+  instructions: >-
+    Verbatim from initialize: "Free, one-call negotiation math for agents — no account, no key.
+    START WITH `negotiate` (your math-optimal next move in any price haggle) or `negotiate_bundle`
+    (several linked issues at once, logrolled); `score_deal`, `auction_bid`, `auction_reserve`,
+    `clearance_price`, and `stable_match` round out the free math. When you need it ON THE RECORD,
+    `session_open` opens a $2 receipted, replayable negotiation session (then session_advise /
+    session_bundle / session_close). When your agent needs to REMEMBER, `memory_save` /
+    `memory_load` are persistent cross-session memory — you encrypt before saving; the store holds
+    only ciphertext (blind custody) and cannot read it. `store_catalog` shows the shelf and your
+    balance; `store_request` files what we don't stock yet. Empirical anchor: the negotiate
+    recommender is ~12% better head-to-head (n=20 paired LLM negotiations, p<0.0001). Power users:
+    the FULL surface (verified agent-to-agent + AP2 settlement, first-strike attestation, auction
+    design/sim, offer-graph engine, legacy names) is the pro door at /mcp/pro/."
+  server_card: ../well-known/snhp-dev-mcp-server-card.json
+  server_card_url: https://snhp.dev/.well-known/mcp/server-card.json
+  raw_initialize: snhp-dev-mcp-initialize.json
+  raw_manifest: snhp-dev-mcp-tools.json
+  raw_manifest_pro: snhp-dev-mcp-pro-tools.json
+registry:
+  official_mcp_registry:
+    name: io.github.ryuxik/snhp
+    latest_version: 0.4.0
+    published: '2026-07-23'
+    remote: https://api.snhp.dev/mcp/
+    source: https://registry.modelcontextprotocol.io/v0/servers?search=snhp
+    note: Two versions listed (0.3.0 and 0.4.0, both 2026-07-23, status active); the repository ships server.json with the 0.4.0 entry. The server card's own `name` is io.github.ryuxik/snhp-negotiation, which does not match the registry name.
+  smithery: {url: 'https://smithery.ai/servers/ryuxik/snhp', status: 200, note: 'stdio listing; smithery.yaml in the repo runs `uvx snhp`'}
+  glama: {note: 'glama.json in the repo names maintainer ryuxik'}
+annotations_note: >-
+  The core door annotates every tool: the seven math tools and memory_load / store_catalog are
+  readOnlyHint true; memory_save, session_open, session_advise, session_bundle and store_request
+  are readOnlyHint false, destructiveHint false, idempotentHint false; session_close is
+  idempotentHint true. All are openWorldHint false. The 39 pro-only tools carry no annotations.
+tools:
+  - {name: negotiate, door: core, paid: false, annotations: read-only, description: 'Your math-optimal next move in any price negotiation — free, no account or key needed.', source_operation: 'openapi/snhp-dev-openapi.yml#negotiate_turn_endpoint_v1_negotiate_turn_post'}
+  - {name: negotiate_bundle, door: core, paid: false, annotations: read-only, description: 'Negotiate several linked issues at once by logrolling — free.', source_operation: 'openapi/snhp-dev-openapi.yml#negotiate_bundle_endpoint_v1_negotiate_bundle_post'}
+  - {name: score_deal, door: core, paid: false, annotations: read-only, description: 'Score a deal against the Pareto frontier (the certificate test''s oracle as a callable tool).', source_operation: null}
+  - {name: auction_bid, door: core, paid: false, annotations: read-only, description: 'Optimal auction bid (first-price, Vickrey, English).', source_operation: 'openapi/snhp-dev-openapi.yml#auction_bidder_optimal_bid_v1_auction_bidder_optimal_bid_post'}
+  - {name: auction_reserve, door: core, paid: false, annotations: read-only, description: 'Revenue-optimal reserve price (Myerson).', source_operation: 'openapi/snhp-dev-openapi.yml#auction_seller_optimal_reserve_v1_auction_seller_optimal_reserve_post'}
+  - {name: clearance_price, door: core, paid: false, annotations: read-only, description: 'Clearance price and markdown schedule (Gallego-van Ryzin posted price).', source_operation: 'openapi/snhp-dev-openapi.yml#mechanism_posted_price_optimal_v1_mechanism_posted_price_optimal_post'}
+  - {name: stable_match, door: core, paid: false, annotations: read-only, description: 'Stable matching (Gale-Shapley deferred acceptance).', source_operation: 'openapi/snhp-dev-openapi.yml#mechanism_gale_shapley_v1_mechanism_gale_shapley_post'}
+  - {name: memory_save, door: core, paid: true, annotations: write, description: 'Save agent memory (blind locker) — flat park fee from the prepaid wallet; retrieval free.', source_operation: 'openapi/snhp-dev-openapi.yml#memory_save_v1_memory_save_post'}
+  - {name: memory_load, door: core, paid: false, annotations: read-only, description: 'Load agent memory by ticket.', source_operation: 'openapi/snhp-dev-openapi.yml#memory_load_v1_memory_parcel__ticket__get'}
+  - {name: session_open, door: core, paid: true, annotations: write, description: 'Open a $2 receipted, deterministic negotiation session (cap 10 moves, 7 days).', source_operation: 'openapi/snhp-dev-openapi.yml#open_advice_session_v1_advice_session_post'}
+  - {name: session_advise, door: core, paid: false, annotations: write, description: 'Next single-price move inside a receipted session (no extra charge).', source_operation: 'openapi/snhp-dev-openapi.yml#advice_move_v1_advice_move_post'}
+  - {name: session_bundle, door: core, paid: false, annotations: write, description: 'Multi-issue logrolled move inside a receipted session.', source_operation: 'openapi/snhp-dev-openapi.yml#advice_bundle_move_v1_advice_bundle_post'}
+  - {name: session_close, door: core, paid: false, annotations: idempotent-write, description: 'Close the session and get the signed summary receipt.', source_operation: 'openapi/snhp-dev-openapi.yml#close_advice_session_v1_advice_close_post'}
+  - {name: store_catalog, door: core, paid: false, annotations: read-only, description: 'Store catalog and wallet balance.', source_operation: 'openapi/snhp-dev-openapi.yml#store_catalog_v1_store_catalog_get'}
+  - {name: store_request, door: core, paid: false, annotations: write, description: 'File a capability request in the demand box, or check a filing by request_id.', source_operation: 'openapi/snhp-dev-openapi.yml#store_request_v1_store_request_post'}
+tools_pro_only_count: 39
+tools_pro_only_note: 'The 39 additional pro-door tools are enumerated, with their REST bindings, in snhp-dev-tool-crosswalk.yml and verbatim with inputSchema in snhp-dev-mcp-pro-tools.json.'

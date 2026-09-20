@@ -1,0 +1,89 @@
+generated: '2026-09-19'
+method: searched
+source: >-
+  https://snhp.dev/llms.txt ("Cost model", "Onboarding", "THE STORE — full reference / Auth &
+  wallet"), https://snhp.dev/.well-known/agents.json (auth block), the operation descriptions of
+  issue_key_v1_keys_post, rotate_key_v1_keys_rotate_post and store_park_v1_store_park_post in
+  openapi/snhp-dev-openapi.yml, and live unauthenticated responses on 2026-09-19.
+docs: https://snhp.dev/llms.txt
+checked: '2026-09-19'
+derive_note: >-
+  0-working/derive-authentication.py produced no profile because the served OpenAPI declares NO
+  components.securitySchemes and no security[] on any of its 74 operations. The scheme below is
+  therefore assembled from the provider's prose and its live behaviour, not from the contract —
+  which is itself a finding: an OpenAPI consumer sees an API with no authentication at all, while
+  roughly a third of the operations require a key. overlays/ proposes the missing schemes.
+summary:
+  types: [apiKey, http-bearer, body-field, none]
+  api_key_in: [header, header-bearer, body]
+  oauth2_flows: []
+  human_required_to_obtain_key: false
+  card_required_to_obtain_key: false
+  self_serve_issuance: 'POST /v1/keys — "Programmatic API key issuance (no human approval)", returns gt_* in <500ms, idempotent on agent_id within 24h, 10 requests/hour per IP.'
+  key_prefix: gt_
+  free_surface: 'All Tier 0 math operations (negotiate, bundle, auction.*, mechanism.*, rent/check, helper, notary verify, discovery) work with NO key at the 60/min-per-IP floor.'
+schemes:
+  - name: BearerKey
+    type: http
+    scheme: bearer
+    bearerFormat: 'gt_<opaque>'
+    header: 'Authorization: Bearer gt_*'
+    status: documented-not-declared
+    note: Preferred form. Raises the caller to the 600/min-per-key rate lane; required (or X-API-Key) for the paid store calls when not passing api_key in the body.
+  - name: XApiKey
+    type: apiKey
+    in: header
+    parameter: X-API-Key
+    status: documented-not-declared
+    note: >-
+      Equivalent to BearerKey. GET /v1/billing/balance with no key answers 422
+      {"detail":[{"type":"missing","loc":["header","X-API-Key"],"msg":"Field required"}]} — the
+      header is a declared FastAPI dependency there, and the missing-credential response is a 422
+      validation error, not a 401, with no WWW-Authenticate.
+  - name: BodyApiKey
+    type: apiKey
+    in: body
+    parameter: api_key
+    status: documented-not-declared
+    note: >-
+      Several paid operations (SessionOpenIn, SessionMoveIn, ParkIn, FetchIn, CheckoutIn, RotateIn,
+      StoreRequestIn ...) carry an api_key field in the JSON body and the MCP tools take it as a
+      tool argument. The provider is explicit that a body key does NOT raise the rate limit
+      ("the limiter only reads headers") and that "header wins" when both are sent. POST
+      /v1/advice/session with no key answers 422 missing body.api_key.
+  - name: MPPPayment
+    type: http
+    scheme: Payment
+    header: 'Authorization: Payment <credential carrying a Stripe Shared Payment Token>'
+    status: documented-and-observed
+    note: >-
+      Not identity — a payment credential (Machine Payments Protocol). POST /v1/mpp/topup with no
+      credential answers 402 application/problem+json with a signed `WWW-Authenticate: Payment
+      id=..., realm="snhp.dev", method="stripe", intent="charge", request=<b64 challenge>,
+      description=..., expires=...` header and `Accept-Payment: stripe`; the client authorises the
+      challenge with an SPT scoped to the store and retries. Observed live 2026-09-19.
+  - name: PeerProof
+    type: custom
+    status: documented
+    note: >-
+      The verified-peer A2A flow authenticates OPERATORS, not callers: an Ed25519 keypair per
+      operator, a signed attestation JWT from POST /v1/registry/register_operator (optionally
+      upgraded to domain-level by a DNS-TXT challenge), and a short-lived per-negotiation proof
+      signed locally. Verified server-side by open_session; not a request credential.
+key_lifecycle:
+  issue: 'POST /v1/keys {agent_id, contact_email, intended_use_summary, telemetry_consent?} -> {api_key: gt_*, rate_limit_per_minute: 600, telemetry_consent, wallet (50c starter credit)}'
+  shown_once: true
+  rotate: 'POST /v1/keys/rotate — replacement issued, full balance carries over, old key invalidated IMMEDIATELY with no grace period.'
+  revoke: 'No standalone revoke; rotation is the revocation path.'
+  recover: 'Manual, human-verified: email the registered contact address from that same address.'
+  telemetry_consent: 'Set ONCE at issuance and immutable; revoke by DELETE /v1/telemetry/delete + stop passing share_outcome.'
+observed:
+  - {request: 'POST /v1/negotiate/turn (no key, documented quickstart body)', status: 200, note: free floor works}
+  - {request: 'GET /v1/billing/balance (no key)', status: 422, body: 'missing header X-API-Key'}
+  - {request: 'POST /v1/advice/session (no key)', status: 422, body: 'missing body api_key'}
+  - {request: 'POST /v1/mpp/topup (no credential)', status: 402, headers: ['WWW-Authenticate: Payment ...', 'Accept-Payment: stripe']}
+see:
+  scopes: 'none — no OAuth2 (derive-oauth-scopes.py: 0 schemes)'
+  rate_limits: rate-limits/snhp-dev-rate-limits.yml
+  conventions: conventions/snhp-dev-conventions.yml
+  overlay: overlays/snhp-dev-openapi-overlay.yaml

@@ -1,0 +1,4196 @@
+{
+  "tools": [
+    {
+      "name": "negotiate",
+      "title": "Negotiate \u2014 your optimal next move",
+      "description": "Your math-optimal next move in any price negotiation \u2014 free, no account or key needed.\n\nUSE THIS WHEN: you're haggling over a single PRICE across multiple back-and-\nforth rounds and want a better outcome than winging it. Validated edge: ~12%\nbetter head-to-head (measured on this recommender, n=20 paired LLM\nnegotiations, 95% CI +6.5-17.4%, p<0.0001). NOT FOR: one-shot or fixed prices\n(it'll tell you to just negotiate directly); multi-issue bundles (use\nnegotiate_bundle \u2014 it logrolls across several linked issues); or non-price\ndecisions like accept-vs-decline a job offer (just reason it through).\n\nYou provide only what you already know \u2014 no game theory:\n  side          \"sell\" or \"buy\"\n  walk_away     your reservation in dollars (seller=floor/minimum, buyer=ceiling/max)\n  target        your aspiration in dollars (seller=high, buyer=low)\n  counterparty_offers  their offers so far, in dollars, oldest first\n  rounds_left   (optional, default 8) roughly how many back-and-forths remain\n  compute_ms    (optional, default 0; EXPERIMENTAL) milliseconds of Monte-Carlo\n                rollouts to spend refining the move. 0 = instant closed form.\n                Validated to show NO realized edge over the closed form (n=400,\n                mc_validation.py) \u2014 kept off by default as a research mechanism,\n                not a quality improvement. The reply carries a \"compute\" block\n\nYou get back, in dollars:\n  {\"action\": \"counter\"|\"accept\"|\"walk\", \"recommended_price\": 5387.0,\n   \"message\": \"...the best I can do is $5,387.00\", \"fit\": {...},\n   \"expected_settlement\": 4943.5, \"confidence\": 0.62}\n\nWORKED EXAMPLE \u2014 selling a contract, floor $4,000, hope $6,000, the buyer has\nbid $4,200 then $4,500:\n  negotiate(side=\"sell\", walk_away=4000, target=6000,\n            counterparty_offers=[4200, 4500], rounds_left=6)\n  -> counter ~$5,387 with a ready-to-send message; ACCEPT once their bid crosses\n     the optimal target; WALK if they stay below your floor near the deadline.\n\nWorks against ANY counterparty with zero setup. (The verified-peer cooperation\npremium is the separate, advanced gt_a2a_* flow on the pro door.)\n",
+      "inputSchema": {
+        "properties": {
+          "side": {
+            "description": "Which side you are: 'sell' or 'buy'.",
+            "title": "Side",
+            "type": "string"
+          },
+          "walk_away": {
+            "description": "Your reservation price in dollars \u2014 the worst you'd accept (seller: your floor/minimum; buyer: your ceiling/maximum).",
+            "title": "Walk Away",
+            "type": "number"
+          },
+          "target": {
+            "description": "Your aspiration price in dollars (seller: high; buyer: low).",
+            "title": "Target",
+            "type": "number"
+          },
+          "counterparty_offers": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "The other side's offers so far, in dollars, oldest first. Omit if they haven't offered yet.",
+            "title": "Counterparty Offers"
+          },
+          "my_previous_offers": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Your own offers so far, in dollars, oldest first (optional context).",
+            "title": "My Previous Offers"
+          },
+          "rounds_left": {
+            "default": 8,
+            "description": "Roughly how many back-and-forth rounds remain before the deadline (default 8).",
+            "title": "Rounds Left",
+            "type": "integer"
+          },
+          "item": {
+            "default": "this",
+            "description": "Short label for what's being negotiated (used only in the drafted message).",
+            "title": "Item",
+            "type": "string"
+          },
+          "compute_ms": {
+            "default": 0,
+            "description": "EXPERIMENTAL. Milliseconds of Monte-Carlo rollouts to spend refining the move; 0 = instant closed form (validated to show no realized edge, off by default).",
+            "title": "Compute Ms",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "side",
+          "walk_away",
+          "target"
+        ],
+        "title": "gt_negotiate_turnArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "properties": {
+          "action": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Action"
+          },
+          "recommended_price": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Recommended Price"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Message"
+          },
+          "rationale": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Rationale"
+          },
+          "fit": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Fit"
+          },
+          "expected_settlement": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Expected Settlement"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Confidence"
+          },
+          "compute": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Compute"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Error"
+          }
+        },
+        "title": "NegotiateOut",
+        "type": "object"
+      },
+      "annotations": {
+        "title": "Negotiate \u2014 your optimal next move",
+        "readOnlyHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "negotiate_bundle",
+      "title": "Negotiate a bundle \u2014 logroll linked issues",
+      "description": "Negotiate several linked issues at once by logrolling \u2014 free, no account or key needed.\n\nUSE THIS WHEN: a deal has more than one issue on the table and they trade off \u2014\na job offer (base + equity + signing), a SaaS contract (price + seats + term +\nSLA), any package deal. It concedes on the issues you care about LESS (and the\nother side cares about MORE) to win the ones you care about most \u2014 a trade that\nbeats splitting every issue down the middle. For a single PRICE, use\nnegotiate instead.\n\nProvide `issues`: a list of {\"name\", \"options\" (the choices), \"my_utility\" (how\ngood each option is to YOU \u2014 one number per option, any scale), \"their_utility\"\n(how good each option is to THEM \u2014 their preference direction)}. Optionally\n`my_priorities` ({issue_name: weight}, how much each issue matters to you) and\n`their_offers` (their packages so far as {issue_name: option}, oldest first \u2014\nthis is what lets it INFER their priorities). Returns {action, recommended_offer\n(issue -> option), message, my_utility, their_expected_utility,\ninferred_their_priorities, trade_logic, fit, confidence, acceptance_probability}.\n\nValidated (separately from the single-issue +12%): returns a Pareto-efficient\npackage that beats naive \"split-every-issue-down-the-middle\" bargaining by ~40%\njoint surplus (300 random 4-issue profiles). HONEST CAVEAT: the priority\nINFERENCE layered on top is weak (recovery r\u22480.3) and currently adds only ~1%\n(and can be slightly NEGATIVE against some opponents) over the same engine run\nwith no inference \u2014 so the proven value today is the efficient-package search,\nnot (yet) the logrolling edge.\n\nOptional timing refinement: pass `rounds_left` (bargaining rounds remaining)\nwith `compute_ms` > 0 to spend that many ms of Monte-Carlo rollouts choosing\nWHICH package to hold for as the other side concedes over the rounds \u2014 a firmer\npackage closes later (discounted) than a generous one. 0 = the instant\nclosed-form package; the reply then carries a `compute` block. Modest by design\n(never worse than the closed form in-model; helps on a minority of deals).\n\nExample: a SaaS contract \u2014 you most want a low price_per_seat, can flex on\nseats/term/SLA. negotiate_bundle(issues=[\n  {\"name\":\"price_per_seat\",\"options\":[\"$50\",\"$40\",\"$30\"],\"my_utility\":[0,0.5,1],\"their_utility\":[1,0.5,0]},\n  {\"name\":\"sla\",\"options\":[\"99%\",\"99.9%\"],\"my_utility\":[0,1],\"their_utility\":[1,0]} ...],\n  my_priorities={\"price_per_seat\":0.55,\"sla\":0.1,...}, their_offers=[...])\n  -> a full package that gives ground on SLA to hold the price.\n",
+      "inputSchema": {
+        "properties": {
+          "issues": {
+            "description": "One dict per issue: {name, options (the choices), my_utility (value of each option to YOU), their_utility (value to THEM)} \u2014 utilities are one number per option, any scale.",
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Issues",
+            "type": "array"
+          },
+          "their_offers": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Packages the other side has tabled, oldest first, each as {issue_name: chosen_option} \u2014 lets it infer their priorities.",
+            "title": "Their Offers"
+          },
+          "my_priorities": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "{issue_name: weight} \u2014 how much each issue matters to you (any scale). Optional.",
+            "title": "My Priorities"
+          },
+          "my_batna": {
+            "default": 0.4,
+            "description": "Your best alternative to no deal, as a utility fraction in [0,1] (default 0.40); the returned package is guaranteed to beat it.",
+            "title": "My Batna",
+            "type": "number"
+          },
+          "their_batna_estimate": {
+            "default": 0.4,
+            "description": "Your estimate of the other side's BATNA, [0,1] (default 0.40).",
+            "title": "Their Batna Estimate",
+            "type": "number"
+          },
+          "rounds_left": {
+            "default": 8,
+            "description": "Bargaining rounds remaining (used with compute_ms for the timing tier; default 8).",
+            "title": "Rounds Left",
+            "type": "integer"
+          },
+          "compute_ms": {
+            "default": 0,
+            "description": "EXPERIMENTAL. Milliseconds of rollouts to choose WHICH package to hold as they concede; 0 = instant closed-form package.",
+            "title": "Compute Ms",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "issues"
+        ],
+        "title": "gt_negotiate_bundleArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "properties": {
+          "action": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Action"
+          },
+          "recommended_offer": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Recommended Offer"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Message"
+          },
+          "my_utility": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "My Utility"
+          },
+          "their_expected_utility": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Their Expected Utility"
+          },
+          "inferred_their_priorities": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Inferred Their Priorities"
+          },
+          "trade_logic": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Trade Logic"
+          },
+          "fit": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Fit"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Confidence"
+          },
+          "acceptance_probability": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Acceptance Probability"
+          },
+          "compute": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Compute"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Error"
+          }
+        },
+        "title": "NegotiateBundleOut",
+        "type": "object"
+      },
+      "annotations": {
+        "title": "Negotiate a bundle \u2014 logroll linked issues",
+        "readOnlyHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "score_deal",
+      "title": "Score a deal against the Pareto frontier",
+      "description": "Score how good a deal is against your floor/target \u2014 free, no account or key needed.\n\nScore a settled package against the exact Pareto frontier \u2014 the SNHP\nleaderboard metric (\"dollars left on the table\") for YOUR negotiation.\n\nArgs:\n    issues: one dict per issue: {\"name\": str, \"options\": [labels],\n        \"my_utility\": [per-option value to me], \"their_utility\":\n        [per-option value to them]} \u2014 both sides' TRUE per-option values.\n    my_weights: {issue_name: weight} \u2014 my true priorities (any scale).\n    their_weights: {issue_name: weight} \u2014 their true priorities.\n    package: the settled deal, {issue_name: option_label}.\n    notional: deal size in dollars for the dollars-left framing.\n\nReturns realized joint welfare, the frontier best, the naive middle-split\nbaseline, frontier capture, logroll capture, and dollars_left_on_table.\n",
+      "inputSchema": {
+        "properties": {
+          "issues": {
+            "description": "One dict per issue: {name, options, my_utility, their_utility} \u2014 both sides' TRUE per-option values (one number per option).",
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Issues",
+            "type": "array"
+          },
+          "my_weights": {
+            "additionalProperties": true,
+            "description": "{issue_name: weight} \u2014 your true priorities (any scale).",
+            "title": "My Weights",
+            "type": "object"
+          },
+          "their_weights": {
+            "additionalProperties": true,
+            "description": "{issue_name: weight} \u2014 their true priorities (any scale).",
+            "title": "Their Weights",
+            "type": "object"
+          },
+          "package": {
+            "additionalProperties": true,
+            "description": "The settled deal as {issue_name: chosen_option_label}.",
+            "title": "Package",
+            "type": "object"
+          },
+          "notional": {
+            "default": 10000.0,
+            "description": "Deal size in dollars, used for the 'dollars left on the table' framing (default 10000).",
+            "title": "Notional",
+            "type": "number"
+          }
+        },
+        "required": [
+          "issues",
+          "my_weights",
+          "their_weights",
+          "package"
+        ],
+        "title": "score_dealArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "properties": {
+          "my_utility": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "My Utility"
+          },
+          "their_utility": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Their Utility"
+          },
+          "joint_welfare": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Joint Welfare"
+          },
+          "frontier_best": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Frontier Best"
+          },
+          "naive_split": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Naive Split"
+          },
+          "frontier_capture": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Frontier Capture"
+          },
+          "logroll_capture": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Logroll Capture"
+          },
+          "dollars_left_on_table": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Dollars Left On Table"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Error"
+          }
+        },
+        "title": "ScoreDealOut",
+        "type": "object"
+      },
+      "annotations": {
+        "title": "Score a deal against the Pareto frontier",
+        "readOnlyHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "auction_bid",
+      "title": "Optimal auction bid",
+      "description": "The optimal bid when you're bidding in an auction \u2014 free, no account or key needed.\n\nUSE THIS WHEN: you're a bidder and want the bid that maximizes your expected\nsurplus without overpaying. NOT for running an auction (use\nauction_reserve) or 1:1 haggling (use negotiate).\n\nProvide: auction_format (\"first_price\" sealed bid, \"second_price_vickrey\",\nor \"english_ascending\"); my_valuation (what the item is worth to YOU, in $);\nn_competing_bidders (how many OTHER bidders, not counting you); and\ncompetitor_value_prior \u2014 a rough model of what rivals will pay, e.g.\n{\"family\":\"uniform\",\"params\":{\"low\":0,\"high\":6000}} (or\n{\"family\":\"lognorm\",\"params\":{\"mu\":8.5,\"sigma\":0.4}}). Estimate it if unknown.\nReturns {optimal_bid, expected_surplus, win_probability, dominant_strategy,\nrationale} \u2014 bid and surplus in the SAME $ you passed in.\n\nExample: a domain worth $5,000 to you, 4 rivals who'd pay up to ~$6,000, in a\nsealed first-price auction -> auction_bid(auction_format=\"first_price\",\nmy_valuation=5000, n_competing_bidders=4,\ncompetitor_value_prior={\"family\":\"uniform\",\"params\":{\"low\":0,\"high\":6000}})\n-> optimal_bid ~$4,000, win_probability ~0.48.\n",
+      "inputSchema": {
+        "properties": {
+          "auction_format": {
+            "description": "'first_price' (sealed), 'second_price_vickrey', or 'english_ascending'.",
+            "enum": [
+              "first_price",
+              "second_price_vickrey",
+              "english_ascending"
+            ],
+            "title": "Auction Format",
+            "type": "string"
+          },
+          "my_valuation": {
+            "description": "What the item is worth to YOU, in dollars.",
+            "title": "My Valuation",
+            "type": "number"
+          },
+          "n_competing_bidders": {
+            "description": "How many OTHER bidders there are (not counting you).",
+            "title": "N Competing Bidders",
+            "type": "integer"
+          },
+          "competitor_value_prior": {
+            "additionalProperties": true,
+            "description": "Rough model of what rivals will pay, e.g. {family:'uniform', params:{low:0, high:6000}} or {family:'lognorm', params:{mu:8.5, sigma:0.4}}.",
+            "title": "Competitor Value Prior",
+            "type": "object"
+          },
+          "reserve_price": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "The auction's reserve/minimum bid in dollars, if any (optional).",
+            "title": "Reserve Price"
+          },
+          "risk_aversion": {
+            "default": 1.0,
+            "description": "Your risk aversion; 1.0 = risk-neutral (default 1.0).",
+            "title": "Risk Aversion",
+            "type": "number"
+          }
+        },
+        "required": [
+          "auction_format",
+          "my_valuation",
+          "n_competing_bidders",
+          "competitor_value_prior"
+        ],
+        "title": "gt_auction_optimal_bidArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "properties": {
+          "optimal_bid": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Optimal Bid"
+          },
+          "expected_surplus": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Expected Surplus"
+          },
+          "win_probability": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Win Probability"
+          },
+          "dominant_strategy": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Dominant Strategy"
+          },
+          "rationale": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Rationale"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Error"
+          }
+        },
+        "title": "AuctionBidOut",
+        "type": "object"
+      },
+      "annotations": {
+        "title": "Optimal auction bid",
+        "readOnlyHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "auction_reserve",
+      "title": "Revenue-optimal reserve price",
+      "description": "The revenue-optimal reserve price when you're selling \u2014 free, no account or key needed.\n\nUSE THIS WHEN: you're running an auction or sale with multiple bidders and need\nthe floor price (minimum bid you'll accept) that maximizes your expected\nrevenue. NOT for one-on-one haggling (use negotiate for that).\n\nProvide: n_bidders (how many bidders), seller_valuation (what the item is worth\nto YOU, in $), and bidder_value_prior \u2014 a rough model of what bidders will pay,\ne.g. {\"family\":\"uniform\",\"params\":{\"low\":2000,\"high\":8000}}. Estimate it if\nunknown. Returns the reserve price and expected revenue.\n\nExample: a painting, ~5 bidders, worth $1,000 to you, bidders likely pay\n$2,000\u2013$8,000 -> auction_reserve(n_bidders=5, seller_valuation=1000,\nbidder_value_prior={\"family\":\"uniform\",\"params\":{\"low\":2000,\"high\":8000}}).\n",
+      "inputSchema": {
+        "properties": {
+          "bidder_value_prior": {
+            "additionalProperties": true,
+            "description": "Rough model of what bidders will pay, e.g. {family:'uniform', params:{low:2000, high:8000}}.",
+            "title": "Bidder Value Prior",
+            "type": "object"
+          },
+          "n_bidders": {
+            "description": "How many bidders you expect.",
+            "title": "N Bidders",
+            "type": "integer"
+          },
+          "seller_valuation": {
+            "description": "What the item is worth to YOU, in dollars (your floor).",
+            "title": "Seller Valuation",
+            "type": "number"
+          }
+        },
+        "required": [
+          "bidder_value_prior",
+          "n_bidders",
+          "seller_valuation"
+        ],
+        "title": "gt_auction_optimal_reserveArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "properties": {
+          "reserve_price": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Reserve Price"
+          },
+          "expected_revenue": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Expected Revenue"
+          },
+          "expected_revenue_no_reserve": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Expected Revenue No Reserve"
+          },
+          "expected_efficiency_loss": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Expected Efficiency Loss"
+          },
+          "rationale": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Rationale"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Error"
+          }
+        },
+        "title": "AuctionReserveOut",
+        "type": "object"
+      },
+      "annotations": {
+        "title": "Revenue-optimal reserve price",
+        "readOnlyHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "clearance_price",
+      "title": "Clearance price & markdown schedule",
+      "description": "Best price plus markdown schedule to clear stock by a deadline \u2014 free, no account or key needed.\n\nUSE THIS WHEN: you must sell a FIXED number of units before a cutoff and\ndemand arrives over time \u2014 event tickets, perishable inventory, end-of-life\nstock. NOT for 1:1 haggling (negotiate) or auctions (auction_bid/reserve).\n\nProvide: inventory (units to sell); horizon_seconds (selling window in\nSECONDS \u2014 14 days = 14*24*3600 = 1209600); arrival_rate_per_second (expected\nshoppers per second = expected total shoppers / horizon_seconds); and\nbuyer_arrival_prior \u2014 a rough model of willingness-to-pay, e.g.\n{\"family\":\"uniform\",\"params\":{\"low\":40,\"high\":150}}. Returns {static_price\n(one good fixed price), static_expected_revenue, dynamic_schedule (list of\n{t_seconds, recommended_price} markdown waypoints), sellthrough_rate,\nrationale} \u2014 all prices in the SAME $ as your prior.\n\nExample: 200 tickets, 14-day window, ~600 shoppers willing to pay $40-$150 ->\nclearance_price(inventory=200, horizon_seconds=1209600,\narrival_rate_per_second=600/1209600,\nbuyer_arrival_prior={\"family\":\"uniform\",\"params\":{\"low\":40,\"high\":150}})\n-> static_price ~$112, schedule marks down $114 -> ~$76 as the deadline nears.\n",
+      "inputSchema": {
+        "properties": {
+          "buyer_arrival_prior": {
+            "additionalProperties": true,
+            "description": "Rough model of buyer willingness-to-pay, e.g. {family:'uniform', params:{low:40, high:150}}.",
+            "title": "Buyer Arrival Prior",
+            "type": "object"
+          },
+          "arrival_rate_per_second": {
+            "description": "Expected shoppers per SECOND (= expected total shoppers / horizon_seconds).",
+            "title": "Arrival Rate Per Second",
+            "type": "number"
+          },
+          "inventory": {
+            "description": "Number of units you must sell before the cutoff.",
+            "title": "Inventory",
+            "type": "integer"
+          },
+          "horizon_seconds": {
+            "description": "Selling window in SECONDS (14 days = 14*24*3600 = 1209600).",
+            "title": "Horizon Seconds",
+            "type": "number"
+          },
+          "n_simulations": {
+            "default": 2000,
+            "description": "Monte-Carlo sample count for the estimate (default 2000).",
+            "title": "N Simulations",
+            "type": "integer"
+          },
+          "seed": {
+            "default": 42,
+            "description": "RNG seed for reproducibility (default 42).",
+            "title": "Seed",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "buyer_arrival_prior",
+          "arrival_rate_per_second",
+          "inventory",
+          "horizon_seconds"
+        ],
+        "title": "gt_mechanism_posted_price_optimalArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "properties": {
+          "static_price": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Static Price"
+          },
+          "static_expected_revenue": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Static Expected Revenue"
+          },
+          "static_simulated_revenue": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Static Simulated Revenue"
+          },
+          "dynamic_schedule": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Dynamic Schedule"
+          },
+          "dynamic_value_estimate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Dynamic Value Estimate"
+          },
+          "sellthrough_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Sellthrough Rate"
+          },
+          "rationale": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Rationale"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Error"
+          }
+        },
+        "title": "ClearancePriceOut",
+        "type": "object"
+      },
+      "annotations": {
+        "title": "Clearance price & markdown schedule",
+        "readOnlyHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "stable_match",
+      "title": "Stable matching (Gale\u2013Shapley)",
+      "description": "Match two groups by their rankings so no pair wants to swap \u2014 free, no account or key needed.\n\nA STABLE matching: USE THIS WHEN you're assigning two sides to each other by\nmutual preference \u2014 interns<->teams, students<->schools, mentors<->mentees \u2014\nand want a result with no \"blocking pair\" (no person+slot that both prefer\neach other over what they got).\n\nProvide proposers and receivers, each a list of {\"id\": name,\n\"preferences\": [ids of the OTHER side, most-wanted first]}. Receivers may add\n\"capacity\" (default 1) to accept several. Returns {matching (name -> name),\nunmatched_proposers, blocking_pairs (empty list = provably stable),\nn_proposals}. NOTE: the result is PROPOSER-optimal, so put the side you want\nto favor in `proposers`.\n\nExample: stable_match(\n    proposers=[{\"id\":\"Ana\",\"preferences\":[\"Growth\",\"Core\"]},\n               {\"id\":\"Ben\",\"preferences\":[\"Core\",\"Growth\"]}],\n    receivers=[{\"id\":\"Growth\",\"preferences\":[\"Ben\",\"Ana\"]},\n               {\"id\":\"Core\",\"preferences\":[\"Ana\",\"Ben\"]}])\n-> matching {\"Ana\":\"Growth\",\"Ben\":\"Core\"}, blocking_pairs [].\n",
+      "inputSchema": {
+        "properties": {
+          "proposers": {
+            "description": "List of {id, preferences:[ids of the OTHER side, most-wanted first]}. The result is PROPOSER-optimal \u2014 put the side you want to favor here.",
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Proposers",
+            "type": "array"
+          },
+          "receivers": {
+            "description": "List of {id, preferences:[...], capacity (optional, default 1)}.",
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Receivers",
+            "type": "array"
+          }
+        },
+        "required": [
+          "proposers",
+          "receivers"
+        ],
+        "title": "gt_mechanism_gale_shapleyArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "properties": {
+          "matching": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Matching"
+          },
+          "unmatched_proposers": {
+            "anyOf": [
+              {
+                "items": {},
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Unmatched Proposers"
+          },
+          "blocking_pairs": {
+            "anyOf": [
+              {
+                "items": {},
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Blocking Pairs"
+          },
+          "n_proposals": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "N Proposals"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Error"
+          }
+        },
+        "title": "StableMatchOut",
+        "type": "object"
+      },
+      "annotations": {
+        "title": "Stable matching (Gale\u2013Shapley)",
+        "readOnlyHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "memory_save",
+      "title": "Save agent memory (blind locker)",
+      "description": "Persistent memory for your agent across sessions \u2014 save now, load in any later session.\n\nYou encrypt before saving; the store holds only ciphertext (blind custody)\nand signs a receipt over its hash \u2014 it cannot read your memory.\n\nSaving uses your prepaid wallet; a new key's 50\u00a2 starter credit covers\nyour first saves, and loading it back (memory_load) is free. `blob_b64`\nis YOUR ciphertext as base64 \u2014 encrypt BEFORE saving; keys never transit,\ncontents are never logged, so a breach leaks only sealed boxes. Charged a\nthin flat fee ONLY on durable store (empty/oversize/unencodable is\nuncharged). ttl_seconds is clamped to [60s, 7d] and the effective\nexpires_at is returned. The receipt's content_hash is over YOUR\nciphertext, so you can prove what you stored without the store ever seeing\nplaintext.",
+      "inputSchema": {
+        "properties": {
+          "api_key": {
+            "description": "Your SNHP API key (a new key's 50c starter credit covers first saves).",
+            "title": "Api Key",
+            "type": "string"
+          },
+          "blob_b64": {
+            "description": "YOUR ciphertext as base64 \u2014 encrypt BEFORE saving; the store holds only the sealed box and cannot read it.",
+            "title": "Blob B64",
+            "type": "string"
+          },
+          "ttl_seconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "How long to keep it, clamped to [60s, 7 days]; the effective expiry is returned (optional).",
+            "title": "Ttl Seconds"
+          }
+        },
+        "required": [
+          "api_key",
+          "blob_b64"
+        ],
+        "title": "store_parkArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "properties": {
+          "ok": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Ok"
+          },
+          "ticket": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Ticket"
+          },
+          "ticket_hash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Ticket Hash"
+          },
+          "size_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Size Bytes"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Expires At"
+          },
+          "price_millicents": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Price Millicents"
+          },
+          "receipt": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Receipt"
+          },
+          "charged": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Charged"
+          },
+          "code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Code"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Reason"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Error"
+          }
+        },
+        "title": "MemorySaveOut",
+        "type": "object"
+      },
+      "annotations": {
+        "title": "Save agent memory (blind locker)",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "memory_load",
+      "title": "Load agent memory",
+      "description": "Load a memory you saved in an earlier session \u2014 retrieval is free.\n\nGet back an encrypted blob you parked earlier (the blind locker) by its\nclaim `ticket`. Returns {ok, blob_b64, size_bytes, expires_at} \u2014 the\nciphertext you saved, which only YOU can decrypt. A wrong owner reads as a\nmissing ticket; an expired TTL is `expired`; a lost at-rest key is\n`at_rest_key_unavailable`. Free (the save settled it).",
+      "inputSchema": {
+        "properties": {
+          "api_key": {
+            "description": "The same SNHP API key you saved under (a different owner reads as a missing ticket).",
+            "title": "Api Key",
+            "type": "string"
+          },
+          "ticket": {
+            "description": "The claim ticket returned by memory_save.",
+            "title": "Ticket",
+            "type": "string"
+          }
+        },
+        "required": [
+          "api_key",
+          "ticket"
+        ],
+        "title": "store_retrieveArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "properties": {
+          "ok": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Ok"
+          },
+          "blob_b64": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Blob B64"
+          },
+          "size_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Size Bytes"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Expires At"
+          },
+          "charged": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Charged"
+          },
+          "code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Code"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Reason"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Error"
+          }
+        },
+        "title": "MemoryLoadOut",
+        "type": "object"
+      },
+      "annotations": {
+        "title": "Load agent memory",
+        "readOnlyHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "session_open",
+      "title": "Open a $2 receipted session",
+      "description": "Open a $2 receipted negotiation session: deterministic, replayable, every move signed.\n\nPAID ($2 once, from your credit balance) \u2014 the $2 covers EVERY move of\nthis negotiation (up to 10 moves, 7 days), tuned to the category. A new\nkey's 50\u00a2 starter credit is a taste, not enough for a session \u2014 top up\nfirst. category: resale | supply | retail. side: buy | sell.\nwalk_away = your true floor (sell) / ceiling (buy) \u2014 private,\nnever crossed. Pass their_offers to get the first move back\nimmediately with the session. Subsequent moves: session_advise\nwith the session_id \u2014 no further charge.",
+      "inputSchema": {
+        "properties": {
+          "api_key": {
+            "description": "Your SNHP API key; $2 is debited from its credit balance (covers every move of this one negotiation).",
+            "title": "Api Key",
+            "type": "string"
+          },
+          "category": {
+            "description": "Negotiation category for tuning: 'resale' | 'supply' | 'retail'.",
+            "title": "Category",
+            "type": "string"
+          },
+          "side": {
+            "description": "Which side you're on: 'buy' or 'sell'.",
+            "title": "Side",
+            "type": "string"
+          },
+          "walk_away": {
+            "description": "Your true reservation in dollars \u2014 floor (sell) / ceiling (buy); private, never crossed.",
+            "title": "Walk Away",
+            "type": "number"
+          },
+          "target": {
+            "description": "Your aspiration price in dollars.",
+            "title": "Target",
+            "type": "number"
+          },
+          "their_offers": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "The other side's offers so far, in dollars, oldest first \u2014 pass to get the first move back with the session (optional).",
+            "title": "Their Offers"
+          },
+          "my_offers": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Your own offers so far, in dollars, oldest first (optional).",
+            "title": "My Offers"
+          },
+          "rounds_left": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Bargaining rounds remaining for this move (optional; overrides the category default).",
+            "title": "Rounds Left"
+          },
+          "seed": {
+            "default": 0,
+            "description": "RNG seed for the deterministic engine (default 0).",
+            "title": "Seed",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "api_key",
+          "category",
+          "side",
+          "walk_away",
+          "target"
+        ],
+        "title": "nextmove_openArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "properties": {
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Session Id"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Category"
+          },
+          "side": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Side"
+          },
+          "price_cents": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Price Cents"
+          },
+          "price_millicents": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Price Millicents"
+          },
+          "max_moves": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Max Moves"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Expires At"
+          },
+          "funding": {
+            "default": null,
+            "title": "Funding"
+          },
+          "balance_after": {
+            "default": null,
+            "title": "Balance After"
+          },
+          "context_hash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Context Hash"
+          },
+          "receipt": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Receipt"
+          },
+          "first_move": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "First Move"
+          },
+          "first_move_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "First Move Error"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Error"
+          },
+          "how_to_pay": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "How To Pay"
+          }
+        },
+        "title": "SessionOpenOut",
+        "type": "object"
+      },
+      "annotations": {
+        "title": "Open a $2 receipted session",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "session_advise",
+      "title": "Session move \u2014 next single-price offer",
+      "description": "Your next move inside a receipted session (single-issue) \u2014 no additional charge (the $2 at session_open covered it).\n\nPass the FULL offer history each time, oldest first. Returns move, exact\nprice, ready-to-send message, and the receipt (why[], context_hash,\ndeterministic compute block).",
+      "inputSchema": {
+        "properties": {
+          "api_key": {
+            "description": "The API key that opened the session.",
+            "title": "Api Key",
+            "type": "string"
+          },
+          "session_id": {
+            "description": "The session_id returned by session_open.",
+            "title": "Session Id",
+            "type": "string"
+          },
+          "their_offers": {
+            "description": "The FULL counterparty offer history, in dollars, oldest first.",
+            "items": {
+              "type": "number"
+            },
+            "title": "Their Offers",
+            "type": "array"
+          },
+          "my_offers": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Your own offer history, in dollars, oldest first (optional).",
+            "title": "My Offers"
+          },
+          "rounds_left": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Bargaining rounds remaining (optional).",
+            "title": "Rounds Left"
+          }
+        },
+        "required": [
+          "api_key",
+          "session_id",
+          "their_offers"
+        ],
+        "title": "nextmove_adviseArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "properties": {
+          "move": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Move"
+          },
+          "offer": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Offer"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Message"
+          },
+          "why": {
+            "anyOf": [
+              {
+                "items": {},
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Why"
+          },
+          "confidence_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Confidence Note"
+          },
+          "context_hash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Context Hash"
+          },
+          "policy_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Policy Id"
+          },
+          "move_index": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Move Index"
+          },
+          "compute": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Compute"
+          },
+          "receipt": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Receipt"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Error"
+          }
+        },
+        "title": "SessionAdviseOut",
+        "type": "object"
+      },
+      "annotations": {
+        "title": "Session move \u2014 next single-price offer",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "session_bundle",
+      "title": "Session move \u2014 multi-issue bundle",
+      "description": "Multi-issue logrolled advice inside a receipted session \u2014 no additional charge.\n\nThe logrolling tier, the thing the free tool does NOT have. Trade the\nissues you care less about for the ones you value: issues = [{name,\noptions, my_utility (per option), their_utility (your read of their\ndirection)}]; their_offers = packages they've tabled, oldest\nfirst. Returns the recommended package, trade logic, inferred\ncounterparty priorities, acceptance probability, and the receipt.\nDeterministic closed form \u2014 no rollout theater. The package is\nguaranteed to clear YOUR stated BATNA (enforced, not promised).",
+      "inputSchema": {
+        "properties": {
+          "api_key": {
+            "description": "The API key that opened the session.",
+            "title": "Api Key",
+            "type": "string"
+          },
+          "session_id": {
+            "description": "The session_id returned by session_open.",
+            "title": "Session Id",
+            "type": "string"
+          },
+          "issues": {
+            "description": "One dict per issue: {name, options, my_utility (per option), their_utility (your read of their direction)}.",
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Issues",
+            "type": "array"
+          },
+          "their_offers": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Packages they've tabled, oldest first, each {issue_name: option} (optional).",
+            "title": "Their Offers"
+          },
+          "my_priorities": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "{issue_name: weight} \u2014 how much each issue matters to you (optional).",
+            "title": "My Priorities"
+          },
+          "my_batna": {
+            "default": 0.4,
+            "description": "Your BATNA as a utility fraction in [0,1] (default 0.40); the package is guaranteed to clear it.",
+            "title": "My Batna",
+            "type": "number"
+          },
+          "their_batna_estimate": {
+            "default": 0.4,
+            "description": "Your estimate of their BATNA, [0,1] (default 0.40).",
+            "title": "Their Batna Estimate",
+            "type": "number"
+          },
+          "cooperation": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Optional cooperation dial in [0,1] biasing toward joint surplus.",
+            "title": "Cooperation"
+          }
+        },
+        "required": [
+          "api_key",
+          "session_id",
+          "issues"
+        ],
+        "title": "nextmove_bundleArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "properties": {
+          "move": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Move"
+          },
+          "package": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Package"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Message"
+          },
+          "why": {
+            "anyOf": [
+              {
+                "items": {},
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Why"
+          },
+          "confidence_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Confidence Note"
+          },
+          "context_hash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Context Hash"
+          },
+          "move_index": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Move Index"
+          },
+          "their_expected_utility": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Their Expected Utility"
+          },
+          "acceptance_probability": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Acceptance Probability"
+          },
+          "receipt": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Receipt"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Error"
+          }
+        },
+        "title": "SessionBundleOut",
+        "type": "object"
+      },
+      "annotations": {
+        "title": "Session move \u2014 multi-issue bundle",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "session_close",
+      "title": "Close session & get the signed receipt",
+      "description": "Close a receipted session and get the signed summary receipt.\n\nOptional \u2014 sessions also expire on their own \u2014 but closing timestamps the\noutcome, which helps the machine learn real round-counts per\ncategory. Returns the `closed` flag AND a signed session-summary\nreceipt (GAUNTLET #4) \u2014 moves count, total charged (one $2 open), and\nthe per-move context_hashes \u2014 to hand your principal. An unknown session\nor key mismatch leaves `closed` false and returns an `error` instead of\nthe receipt (indistinguishable, so a session id can't be probed).",
+      "inputSchema": {
+        "properties": {
+          "api_key": {
+            "description": "The API key that opened the session.",
+            "title": "Api Key",
+            "type": "string"
+          },
+          "session_id": {
+            "description": "The session_id to close.",
+            "title": "Session Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "api_key",
+          "session_id"
+        ],
+        "title": "nextmove_closeArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "properties": {
+          "closed": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Closed"
+          },
+          "receipt": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Receipt"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Error"
+          }
+        },
+        "title": "SessionCloseOut",
+        "type": "object"
+      },
+      "annotations": {
+        "title": "Close session & get the signed receipt",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "store_catalog",
+      "title": "Store catalog & wallet balance",
+      "description": "See what's on the shelf \u2014 free, no key needed: prices, predicates, receipt scheme, and your balance.\n\nTHE STORE: one counter, one prepaid wallet, many slots. One read covers\nthe whole shelf \u2014 the commodity slots, the blind locker (agent memory),\nand the paid receipted-session SKU (folds in what nextmove_catalog used\nto report separately).\n\nEvery commodity slot settles ON DELIVERY: the wallet is debited only\nwhen a machine-checkable predicate passes \u2014 a failed fetch is never\ncharged, because here you cannot pay for nothing. Each receipt names\nthe backend that served and its EXACT wholesale cost (passthrough, no\nper-call markup); the counter's cut is a published fee on wallet\ntop-ups, not on the calls \u2014 5% + a fixed 30\u00a2 per transaction (the 30\u00a2\nis the card rail's own per-transaction toll, passed through).\n\nEvery new key gets a one-time 50\u00a2 starter credit \u2014 unconditional, no\ncard \u2014 enough to taste the shelf before funding it. Don't see the\ncapability you need? store_request logs it; unmet demand decides what\ngets stocked next. Returns the money unit (millicents, 1000 per cent),\nper-slot {tier, max_price_millicents, predicate_id, request_doc,\nserving-backend ids}, the anchor SKUs, the paid_session card, and the\ntwo pricing facts. Never returns key material.",
+      "inputSchema": {
+        "properties": {},
+        "title": "store_catalogArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "properties": {
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Unit"
+          },
+          "millicents_per_cent": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Millicents Per Cent"
+          },
+          "counter_fee": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Counter Fee"
+          },
+          "counter_fee_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Counter Fee Pct"
+          },
+          "request_privacy": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Request Privacy"
+          },
+          "keys": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Keys"
+          },
+          "starter_credit": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Starter Credit"
+          },
+          "admission": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Admission"
+          },
+          "slots": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Slots"
+          },
+          "paid_session": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Paid Session"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Error"
+          }
+        },
+        "title": "StoreCatalogOut",
+        "type": "object"
+      },
+      "annotations": {
+        "title": "Store catalog & wallet balance",
+        "readOnlyHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "store_request",
+      "title": "Request a capability / check a filing",
+      "description": "Ask for a capability we don't sell yet \u2014 free; filings are public and drive what we stock.\n\nTwo reads in one tool (absorbs the old store_request_status /\nnextmove_request): pass `request_id` to RE-QUERY a filing's status\ninstead of filing anew \u2014 returns {found, request_id, status, status_note,\nfiled_at, door, text} (found: false on an unknown id). Without a\nrequest_id it FILES a new ask and returns {request_id, status, watch,\ncheck}: every filing is logged verbatim (size-capped, stored as data,\nnever rendered raw) and gets an id you can come back to (GAUNTLET #5).\nCheck any filing with GET /v1/store/request/{id}; the public count is\nGET /v1/store/requests. Unmet demand decides what gets stocked next \u2014 the\nshelf writes itself from what agents ask for and can't get.\n\nPass watch=True WITH an api_key when filing to flag the ask for a heads-up\non a status flip (poll store_my_requests to see it \u2014 poll-based, no push);\nan anonymous watch is ignored, and the chosen flag is echoed as `watch`.",
+      "inputSchema": {
+        "properties": {
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "What capability you want that we don't stock yet (free-text). Omit when re-querying with request_id.",
+            "title": "Text"
+          },
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Your SNHP API key (optional; required only if you set watch=True).",
+            "title": "Api Key"
+          },
+          "watch": {
+            "default": false,
+            "description": "Set True (with an api_key) to flag the ask for a status-flip heads-up; anonymous watches are ignored.",
+            "title": "Watch",
+            "type": "boolean"
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Pass an existing filing id to RE-QUERY its status instead of filing a new request.",
+            "title": "Request Id"
+          }
+        },
+        "title": "store_requestArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "properties": {
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Request Id"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Status"
+          },
+          "watch": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Watch"
+          },
+          "check": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Check"
+          },
+          "found": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Found"
+          },
+          "status_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Status Note"
+          },
+          "filed_at": {
+            "default": null,
+            "title": "Filed At"
+          },
+          "door": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Door"
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Text"
+          },
+          "same_ask_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Same Ask Count"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Error"
+          }
+        },
+        "title": "StoreRequestOut",
+        "type": "object"
+      },
+      "annotations": {
+        "title": "Request a capability / check a filing",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "gt_negotiation_sell_next_offer",
+      "description": "\nSell-side next-offer recommendation.\n\nSet `peer_mode=True` when the counterparty is a verified SNHP-protocol\npeer (cryptographic attestation). Activates the cooperative architecture:\nmax-self signaling rounds 0-1, then cubic descent toward the PEER floor\n(0.55). Adds bilateral cooperation premium ~+7% (CI [+2.8%, +11.8%],\nn=20 LLM tournament, p=0.058 borderline \u2014 N=50 confirmation pending).\n\nWithout peer_mode (single-side adoption): SNHP customer beats vanilla\ncounterparty by +12.1% head-to-head margin (CI [+6.5%, +17.4%], p<0.0001).\n\n`pareto_knob \u2208 [0, 1]` (only used when peer_mode=False) interpolates\nbetween deal-rate-max (0) and H2H-margin-max (1). Returns the\nrecommended offer (in our utility space), acceptance probability,\nexpected payoff, and the inferred posterior over the buyer's WTP.\n",
+      "inputSchema": {
+        "properties": {
+          "my_reservation": {
+            "title": "My Reservation",
+            "type": "number"
+          },
+          "opponent_offer_history": {
+            "items": {
+              "type": "number"
+            },
+            "title": "Opponent Offer History",
+            "type": "array"
+          },
+          "my_offer_history": {
+            "items": {
+              "type": "number"
+            },
+            "title": "My Offer History",
+            "type": "array"
+          },
+          "deadline_rounds": {
+            "title": "Deadline Rounds",
+            "type": "integer"
+          },
+          "pareto_knob": {
+            "default": 0.5,
+            "title": "Pareto Knob",
+            "type": "number"
+          },
+          "peer_mode": {
+            "default": false,
+            "title": "Peer Mode",
+            "type": "boolean"
+          },
+          "buyer_wtp_prior": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Buyer Wtp Prior"
+          }
+        },
+        "required": [
+          "my_reservation",
+          "opponent_offer_history",
+          "my_offer_history",
+          "deadline_rounds"
+        ],
+        "title": "gt_negotiation_sell_next_offerArguments",
+        "type": "object"
+      }
+    },
+    {
+      "name": "gt_negotiation_buy_next_offer",
+      "description": "\nBuy-side next-offer recommendation with a defense bundle.\n\nSet `peer_mode=True` when the counterparty is a verified SNHP-protocol\npeer to activate cooperative architecture (PEER playbook + signaling).\n\nIf `anchor_attack_detection` is in defenses, supply `market_prior`\n{mu, sigma}. Returns recommended offer + warnings + defense actions.\n",
+      "inputSchema": {
+        "properties": {
+          "my_reservation": {
+            "title": "My Reservation",
+            "type": "number"
+          },
+          "seller_offer_history": {
+            "items": {
+              "type": "number"
+            },
+            "title": "Seller Offer History",
+            "type": "array"
+          },
+          "my_offer_history": {
+            "items": {
+              "type": "number"
+            },
+            "title": "My Offer History",
+            "type": "array"
+          },
+          "deadline_rounds": {
+            "title": "Deadline Rounds",
+            "type": "integer"
+          },
+          "pareto_knob": {
+            "default": 0.5,
+            "title": "Pareto Knob",
+            "type": "number"
+          },
+          "defenses": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Defenses"
+          },
+          "market_prior": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Market Prior"
+          },
+          "peer_mode": {
+            "default": false,
+            "title": "Peer Mode",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "my_reservation",
+          "seller_offer_history",
+          "my_offer_history",
+          "deadline_rounds"
+        ],
+        "title": "gt_negotiation_buy_next_offerArguments",
+        "type": "object"
+      }
+    },
+    {
+      "name": "gt_negotiation_detect_anchor_attack",
+      "description": "\nZ-score the opponent's opening offer against a market prior {mu, sigma}.\nRecommends ignore / counter_with_market / walk_away.\n",
+      "inputSchema": {
+        "properties": {
+          "opponent_offer_history": {
+            "items": {
+              "type": "number"
+            },
+            "title": "Opponent Offer History",
+            "type": "array"
+          },
+          "market_prior": {
+            "additionalProperties": true,
+            "title": "Market Prior",
+            "type": "object"
+          }
+        },
+        "required": [
+          "opponent_offer_history",
+          "market_prior"
+        ],
+        "title": "gt_negotiation_detect_anchor_attackArguments",
+        "type": "object"
+      }
+    },
+    {
+      "name": "gt_negotiation_declare_first_strike",
+      "description": "\nCryptographically commit to a buyer reservation. Returns an EdDSA-signed\nJWT attestation the buyer shows the seller. Use SHA-256 over\n(reservation || nonce || salt || buyer_id || seller_id), base64url-encoded\nwithout padding, as `reservation_hash`.\n",
+      "inputSchema": {
+        "properties": {
+          "buyer_id": {
+            "title": "Buyer Id",
+            "type": "string"
+          },
+          "seller_id": {
+            "title": "Seller Id",
+            "type": "string"
+          },
+          "reservation_hash": {
+            "title": "Reservation Hash",
+            "type": "string"
+          },
+          "deadline_iso": {
+            "title": "Deadline Iso",
+            "type": "string"
+          },
+          "binding_ttl_seconds": {
+            "title": "Binding Ttl Seconds",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "buyer_id",
+          "seller_id",
+          "reservation_hash",
+          "deadline_iso",
+          "binding_ttl_seconds"
+        ],
+        "title": "gt_negotiation_declare_first_strikeArguments",
+        "type": "object"
+      }
+    },
+    {
+      "name": "gt_negotiation_reveal_first_strike",
+      "description": "Reveal a previous first-strike to obtain the binding offer.",
+      "inputSchema": {
+        "properties": {
+          "commitment_id": {
+            "title": "Commitment Id",
+            "type": "string"
+          },
+          "reservation": {
+            "title": "Reservation",
+            "type": "number"
+          },
+          "nonce": {
+            "title": "Nonce",
+            "type": "string"
+          },
+          "salt": {
+            "title": "Salt",
+            "type": "string"
+          }
+        },
+        "required": [
+          "commitment_id",
+          "reservation",
+          "nonce",
+          "salt"
+        ],
+        "title": "gt_negotiation_reveal_first_strikeArguments",
+        "type": "object"
+      }
+    },
+    {
+      "name": "gt_negotiation_trust_anchor_public_key",
+      "description": "ASCII PEM of the server's first-strike attestation public key.",
+      "inputSchema": {
+        "properties": {},
+        "title": "gt_negotiation_trust_anchor_public_keyArguments",
+        "type": "object"
+      }
+    },
+    {
+      "name": "gt_auction_format_recommendation",
+      "description": "Recommend format from {first_price, vickrey, english} given weights.",
+      "inputSchema": {
+        "properties": {
+          "bidder_value_prior": {
+            "additionalProperties": true,
+            "title": "Bidder Value Prior",
+            "type": "object"
+          },
+          "n_bidders": {
+            "title": "N Bidders",
+            "type": "integer"
+          },
+          "seller_valuation": {
+            "title": "Seller Valuation",
+            "type": "number"
+          },
+          "weights": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Weights"
+          }
+        },
+        "required": [
+          "bidder_value_prior",
+          "n_bidders",
+          "seller_valuation"
+        ],
+        "title": "gt_auction_format_recommendationArguments",
+        "type": "object"
+      }
+    },
+    {
+      "name": "gt_auction_simulate",
+      "description": "Monte Carlo auction revenue + efficiency.",
+      "inputSchema": {
+        "properties": {
+          "auction_format": {
+            "enum": [
+              "first_price",
+              "second_price_vickrey",
+              "english_ascending"
+            ],
+            "title": "Auction Format",
+            "type": "string"
+          },
+          "bidder_priors": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Bidder Priors",
+            "type": "array"
+          },
+          "reserve_price": {
+            "title": "Reserve Price",
+            "type": "number"
+          },
+          "n_simulations": {
+            "default": 10000,
+            "title": "N Simulations",
+            "type": "integer"
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Seed"
+          }
+        },
+        "required": [
+          "auction_format",
+          "bidder_priors",
+          "reserve_price"
+        ],
+        "title": "gt_auction_simulateArguments",
+        "type": "object"
+      }
+    },
+    {
+      "name": "gt_mechanism_optimal_auction_design",
+      "description": "\nMyerson revenue-optimal mechanism for asymmetric IPV. Per-bidder\nreserves; collapses to second-price-with-reserve under symmetric IPV.\n",
+      "inputSchema": {
+        "properties": {
+          "bidder_priors": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Bidder Priors",
+            "type": "array"
+          },
+          "seller_valuation": {
+            "title": "Seller Valuation",
+            "type": "number"
+          },
+          "objective": {
+            "default": "revenue",
+            "enum": [
+              "revenue",
+              "welfare"
+            ],
+            "title": "Objective",
+            "type": "string"
+          },
+          "n_simulations": {
+            "default": 5000,
+            "title": "N Simulations",
+            "type": "integer"
+          },
+          "seed": {
+            "default": 42,
+            "title": "Seed",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "bidder_priors",
+          "seller_valuation"
+        ],
+        "title": "gt_mechanism_optimal_auction_designArguments",
+        "type": "object"
+      }
+    },
+    {
+      "name": "gt_a2a_register_operator",
+      "description": "Register your operator identity \u2014 STEP 0 of the verified-peer deal flow.\n\nUSE THE A2A FLOW ONLY WHEN the counterparty ALSO runs SNHP; it unlocks a\ncooperation premium (more joint surplus between verified peers) plus a signed,\nsettleable AP2 deal record. Against an unknown counterparty, just use\nnegotiate / negotiate_bundle \u2014 none of this is needed.\n\nTHE FLOW (you and the counterparty each have an Ed25519 keypair):\n  0. gt_a2a_register_operator        -> your signed identity attestation (this)\n     [optional] gt_a2a_request_domain_challenge + gt_a2a_verify_domain\n                                      -> upgrade to sybil-resistant domain identity\n  1. gt_a2a_build_peer_proof         -> a per-negotiation proof (signs LOCALLY)\n  2. exchange proofs with the counterparty (your channel / an A2A message)\n  3. gt_a2a_open_session             -> session_id + peer_mode (TRUE iff both verify)\n  4. gt_a2a_next_offer               -> recommendation using the SESSION's peer_mode\n  5. gt_a2a_settle                   -> a signed AP2 Cart Mandate (the deal record)\n\nThis step: register operator_id with your base64 Ed25519 PUBLIC key; returns a\ntrust-anchor-signed attestation JWT to present in peer proofs.\n",
+      "inputSchema": {
+        "properties": {
+          "operator_id": {
+            "title": "Operator Id",
+            "type": "string"
+          },
+          "public_key_b64": {
+            "title": "Public Key B64",
+            "type": "string"
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Display Name"
+          }
+        },
+        "required": [
+          "operator_id",
+          "public_key_b64"
+        ],
+        "title": "gt_a2a_register_operatorArguments",
+        "type": "object"
+      }
+    },
+    {
+      "name": "gt_a2a_request_domain_challenge",
+      "description": "Get the DNS-TXT record to publish to prove control of `domain` (sybil-\nresistant, domain-level identity).",
+      "inputSchema": {
+        "properties": {
+          "domain": {
+            "title": "Domain",
+            "type": "string"
+          },
+          "public_key_b64": {
+            "title": "Public Key B64",
+            "type": "string"
+          }
+        },
+        "required": [
+          "domain",
+          "public_key_b64"
+        ],
+        "title": "gt_a2a_request_domain_challengeArguments",
+        "type": "object"
+      }
+    },
+    {
+      "name": "gt_a2a_verify_domain",
+      "description": "Verify the published DNS-TXT challenge and register `domain` as a\ndomain-verified operator.",
+      "inputSchema": {
+        "properties": {
+          "domain": {
+            "title": "Domain",
+            "type": "string"
+          },
+          "public_key_b64": {
+            "title": "Public Key B64",
+            "type": "string"
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Display Name"
+          }
+        },
+        "required": [
+          "domain",
+          "public_key_b64"
+        ],
+        "title": "gt_a2a_verify_domainArguments",
+        "type": "object"
+      }
+    },
+    {
+      "name": "gt_a2a_build_peer_proof",
+      "description": "STEP 1 of the A2A flow \u2014 sign a per-negotiation peer proof, LOCALLY.\n\nBind your registered identity (operator_attestation_jwt from\ngt_a2a_register_operator) to THIS negotiation_id and role ('seller'/'buyer')\nusing your operator private key (base64 of the raw 32-byte Ed25519 key). The\nkey never leaves this process \u2014 run this MCP server on your own host. The proof\nis short-lived and can't be replayed to another negotiation or role. NEXT: send\nit to the counterparty, get theirs, then gt_a2a_open_session with both.",
+      "inputSchema": {
+        "properties": {
+          "operator_attestation_jwt": {
+            "title": "Operator Attestation Jwt",
+            "type": "string"
+          },
+          "operator_id": {
+            "title": "Operator Id",
+            "type": "string"
+          },
+          "negotiation_id": {
+            "title": "Negotiation Id",
+            "type": "string"
+          },
+          "role": {
+            "title": "Role",
+            "type": "string"
+          },
+          "private_key_b64": {
+            "title": "Private Key B64",
+            "type": "string"
+          },
+          "ttl_seconds": {
+            "default": 300,
+            "title": "Ttl Seconds",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "operator_attestation_jwt",
+          "operator_id",
+          "negotiation_id",
+          "role",
+          "private_key_b64"
+        ],
+        "title": "gt_a2a_build_peer_proofArguments",
+        "type": "object"
+      }
+    },
+    {
+      "name": "gt_a2a_open_session",
+      "description": "STEP 3 of the A2A flow \u2014 verify BOTH peer proofs and open a session.\n\nSubmit the seller_proof and buyer_proof (yours + the counterparty's from STEP 2).\nReturns session_id and peer_mode. peer_mode is server-derived and is True ONLY if\nboth proofs verify (at/above require_level), are for their roles, are unexpired,\nand name DISTINCT operators \u2014 so the premium can't be claimed by lying. Pass\nrequire_level='domain' to demand domain-verified counterparties. NEXT:\ngt_a2a_next_offer with the returned session_id.",
+      "inputSchema": {
+        "properties": {
+          "negotiation_id": {
+            "title": "Negotiation Id",
+            "type": "string"
+          },
+          "seller_proof": {
+            "additionalProperties": true,
+            "title": "Seller Proof",
+            "type": "object"
+          },
+          "buyer_proof": {
+            "additionalProperties": true,
+            "title": "Buyer Proof",
+            "type": "object"
+          },
+          "require_level": {
+            "default": "self",
+            "enum": [
+              "self",
+              "domain"
+            ],
+            "title": "Require Level",
+            "type": "string"
+          }
+        },
+        "required": [
+          "negotiation_id",
+          "seller_proof",
+          "buyer_proof"
+        ],
+        "title": "gt_a2a_open_sessionArguments",
+        "type": "object"
+      }
+    },
+    {
+      "name": "gt_a2a_next_offer",
+      "description": "STEP 4 of the A2A flow \u2014 your next move, using the SESSION's verified peer_mode.\n\nrole is 'seller' or 'buyer'. The recommender uses the session's server-derived\npeer_mode (not a self-asserted flag), so the cooperation premium applies only on a\ngenuinely verified session. my_reservation and the offer histories are in\nNORMALIZED utility [0,1] (map dollars the way negotiate does, or use\nnegotiate/negotiate_bundle for the math and this path for the premium +\nsettlement). NEXT, once you agree on a price: gt_a2a_settle.",
+      "inputSchema": {
+        "properties": {
+          "session_id": {
+            "title": "Session Id",
+            "type": "string"
+          },
+          "role": {
+            "title": "Role",
+            "type": "string"
+          },
+          "my_reservation": {
+            "title": "My Reservation",
+            "type": "number"
+          },
+          "opponent_offer_history": {
+            "items": {
+              "type": "number"
+            },
+            "title": "Opponent Offer History",
+            "type": "array"
+          },
+          "my_offer_history": {
+            "items": {
+              "type": "number"
+            },
+            "title": "My Offer History",
+            "type": "array"
+          },
+          "deadline_rounds": {
+            "default": 10,
+            "title": "Deadline Rounds",
+            "type": "integer"
+          },
+          "pareto_knob": {
+            "default": 0.5,
+            "title": "Pareto Knob",
+            "type": "number"
+          },
+          "prior": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Prior"
+          }
+        },
+        "required": [
+          "session_id",
+          "role",
+          "my_reservation",
+          "opponent_offer_history",
+          "my_offer_history"
+        ],
+        "title": "gt_a2a_next_offerArguments",
+        "type": "object"
+      }
+    },
+    {
+      "name": "gt_a2a_settle",
+      "description": "STEP 5 (final) of the A2A flow \u2014 mint the signed deal record.\n\nOnce both sides agree on agreed_price, this emits a signed AP2 Cart Mandate (a\nnon-repudiable VC-JWT naming both verified parties) \u2014 and an Intent Mandate too if\nyou pass buyer_max_price. Refused unless the session is peer_mode=True (both\nverified and distinct), so a Cart Mandate always names two real, verified parties.\nNo escrow; the mandate is the settleable record.",
+      "inputSchema": {
+        "properties": {
+          "session_id": {
+            "title": "Session Id",
+            "type": "string"
+          },
+          "agreed_price": {
+            "title": "Agreed Price",
+            "type": "number"
+          },
+          "currency": {
+            "default": "USD",
+            "title": "Currency",
+            "type": "string"
+          },
+          "item": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Item"
+          },
+          "buyer_max_price": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Buyer Max Price"
+          },
+          "terms": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Terms"
+          }
+        },
+        "required": [
+          "session_id",
+          "agreed_price"
+        ],
+        "title": "gt_a2a_settleArguments",
+        "type": "object"
+      }
+    },
+    {
+      "name": "gt_negotiate_open_session",
+      "description": "Open a stateful price-negotiation session that PONDERS on the other side's clock.\n\nUnlike one-shot negotiate, a session remembers the running history and \u2014\nafter each propose/respond \u2014 speculates in the BACKGROUND over the counter-offers\nthe other side is likely to make, pre-solving your reply to each. So while you're\nblocked waiting for their response, idle compute is already searching; when their\ncounter arrives, gt_negotiate_respond often returns an instant, deeply-searched\nmove. side='sell'/'buy', walk_away/target in dollars (same meaning as\nnegotiate), compute_ms = rollout budget per move. Returns {session_id}.\nNEXT: gt_negotiate_propose to make your opening move.",
+      "inputSchema": {
+        "properties": {
+          "side": {
+            "title": "Side",
+            "type": "string"
+          },
+          "walk_away": {
+            "title": "Walk Away",
+            "type": "number"
+          },
+          "target": {
+            "title": "Target",
+            "type": "number"
+          },
+          "rounds_left": {
+            "default": 8,
+            "title": "Rounds Left",
+            "type": "integer"
+          },
+          "item": {
+            "default": "this",
+            "title": "Item",
+            "type": "string"
+          },
+          "compute_ms": {
+            "default": 200,
+            "title": "Compute Ms",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "side",
+          "walk_away",
+          "target"
+        ],
+        "title": "gt_negotiate_open_sessionArguments",
+        "type": "object"
+      }
+    },
+    {
+      "name": "gt_negotiate_propose",
+      "description": "Make your next move in a pondering session and kick off background speculation.\n\nReturns the same dict as negotiate (action, recommended_price, message,\ncompute, ...). Immediately after returning, the session searches your replies to\nthe counter-offers it expects \u2014 on the counterparty's clock. NEXT: when they\nreply, gt_negotiate_respond(session_id, their_offer).",
+      "inputSchema": {
+        "properties": {
+          "session_id": {
+            "title": "Session Id",
+            "type": "string"
+          },
+          "compute_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Compute Ms"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "title": "gt_negotiate_proposeArguments",
+        "type": "object"
+      }
+    },
+    {
+      "name": "gt_negotiate_respond",
+      "description": "Feed the counterparty's latest dollar offer and get your next move.\n\nIf their offer is roughly what the session anticipated, the deeply-searched reply\nis already cached and returned instantly (the reply's \"_pondered\" field is True);\notherwise a fresh warm-started search runs. Same return shape as negotiate.",
+      "inputSchema": {
+        "properties": {
+          "session_id": {
+            "title": "Session Id",
+            "type": "string"
+          },
+          "their_offer": {
+            "title": "Their Offer",
+            "type": "number"
+          },
+          "compute_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Compute Ms"
+          }
+        },
+        "required": [
+          "session_id",
+          "their_offer"
+        ],
+        "title": "gt_negotiate_respondArguments",
+        "type": "object"
+      }
+    },
+    {
+      "name": "gt_negotiate_close_session",
+      "description": "Close a pondering session and cancel any in-flight background speculation.",
+      "inputSchema": {
+        "properties": {
+          "session_id": {
+            "title": "Session Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "title": "gt_negotiate_close_sessionArguments",
+        "type": "object"
+      }
+    },
+    {
+      "name": "offer_profile_menu",
+      "description": "Profile a seller's menu: classify every dimension FREE or LEVER \u2014 where the negotiation surface actually is.\n\nUSE THIS WHEN: you (or the agent you're buying from / selling for) have a\nmenu of configurable items and want to know which dimensions are worth\nnegotiating on. FREE = zero cost gradient \u2014 a costless customization\n(sweetness, cup choice); the buyer just gets their favorite, it is never\na price lever. LEVER = changing the option moves the seller's effective\ncost \u2014 a real negotiation surface (which item, quantity, add-ons).\n\n`spec` is the declarative JSON menu spec (the same format everywhere in\nSNHP \u2014 the /v1/offer/* HTTP endpoints and the JS engine accept it too):\n\n  {\"name\": \"corner coffee cart\",\n   \"dims\": [\n     {\"id\": \"item\", \"kind\": \"choice\", \"options\": [\n        {\"id\": \"oat-latte\", \"price_delta\": 5.25, \"unit_cost\": 1.20},\n        {\"id\": \"drip\",      \"price_delta\": 3.00, \"unit_cost\": 0.40}]},\n     {\"id\": \"extras\", \"kind\": \"addon\",      \"options\": [...]},\n     {\"id\": \"cup\",    \"kind\": \"preference\", \"options\": [\n        {\"id\": \"for-here\"}, {\"id\": \"to-go\"}]},\n     {\"id\": \"pickup\", \"kind\": \"fulfillment\", \"options\": [\n        {\"id\": \"now\",   \"immediate\": true,  \"slot_ticks\": 0},\n        {\"id\": \"in-20\", \"immediate\": false, \"slot_ticks\": 2}]},\n     {\"id\": \"qty\", \"kind\": \"quantity\", \"qty_cap\": 3}],\n   \"cost\": [\"const\"]}\n\nDimension kinds: choice (pick exactly one), addon (pick a subset),\npreference (pick one, costless taste), fulfillment (timing slot),\nquantity (integer 1..qty_cap). Option fields: price_delta (contribution\nto LIST price), unit_cost, and optionally stock_limited, perishable,\nsalvage, immediate, slot_ticks. Cost stack tokens: \"const\",\n\"salvage_on_expiry\" (perishables at salvage when expiring),\n\"scarcity_shadow\" (finite stock displaces list sales),\n{\"batch_economies\": {\"setup\": 1.0, \"marginal\": 0.2}}.\n\nOptional `state` is the shop moment the cost model reads:\n  {\"inventory\": {\"cold-brew\": 6}, \"expected_demand\": {\"cold-brew\": 10},\n   \"expiring\": [\"croissant\"], \"capacity\": {\"2\": 6}, \"tick\": 0}\n\nReturns {dims: [{dim, kind, verdict, cost_spread, why}], verdicts,\nnote}. Returns {\"error\": \"...\"} on a malformed spec.\n",
+      "inputSchema": {
+        "properties": {
+          "spec": {
+            "additionalProperties": true,
+            "title": "Spec",
+            "type": "object"
+          },
+          "state": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "State"
+          }
+        },
+        "required": [
+          "spec"
+        ],
+        "title": "offer_profile_menuArguments",
+        "type": "object"
+      }
+    },
+    {
+      "name": "offer_quote",
+      "description": "Price a buyer's cart on a menu \u2014 a Nash-split, DISCOUNT-ONLY quote (never above list).\n\nUSE THIS WHEN: you want the engine's advisory price for a configurable\ncart on a seller's menu \u2014 which configuration to sell/buy and at what\nprice, given the shop's live state. The engine searches every valid\nconfiguration (or prices the pinned `config`), anchors the no-deal\npoint on the buyer's best full-price menu order, and splits only the\nNEWLY-CREATED surplus. HARD GUARANTEE: discount-only \u2014 the price is\nnever above the menu's list value (`never_above_list: true` in the\nresponse, enforced in code). A buyer who would have paid list never\ngets a discount out of the seller's standing margin.\n\n`spec`: the same declarative JSON menu spec as offer_profile_menu.\n`state` (optional): the shop moment \u2014 {\"inventory\": {...},\n  \"expected_demand\": {...}, \"expiring\": [...], \"capacity\": {...}}.\n`buyer`: {\"values\": {\"item\": {\"oat-latte\": 6.0}},  # $/unit by dim->option\n          \"qty_decay\": 0.9,   # each extra unit worth 90% of the previous\n          \"outside\": 0.0,     # outside-option surplus in $\n          \"balk\": 0.3,        # chance a walk-in bails at the queue\n          \"defer\": {\"2\": 0.1}}  # slot_ticks -> $ cost of waiting\n`config` (optional): pin the cart \u2014 {\"item\": \"oat-latte\",\n  \"extras\": [\"vanilla\"], \"pickup\": \"in-20\", \"qty\": 2}; addon dims take\n  a list, quantity an int. Omit to search every valid cart.\nOptions: quote_lookers=False refuses buyers who'd never pay list (the\nincentive-compatibility floor); min_price_frac=0.8 never quotes below\n80% of list; qty_appetite=True blocks upsell units the buyer values\nbelow their cost; seller_weight tilts the Nash split (0.5 = symmetric).\n\nReturns {\"outcome\": \"negotiated\"|\"at_list\"|\"walk\", \"quote\": {config,\nprice, listv, save, cost, value, seller_gain, buyer_gain, feasible,\nwhy} | null, \"never_above_list\": true, \"advisory\": true, note}.\nQuotes are SIMULATED advisory engine output, not a binding offer from\nany seller. Returns {\"error\": \"...\"} on malformed input.\n",
+      "inputSchema": {
+        "properties": {
+          "spec": {
+            "additionalProperties": true,
+            "title": "Spec",
+            "type": "object"
+          },
+          "buyer": {
+            "additionalProperties": true,
+            "title": "Buyer",
+            "type": "object"
+          },
+          "state": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "State"
+          },
+          "config": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Config"
+          },
+          "quote_lookers": {
+            "default": true,
+            "title": "Quote Lookers",
+            "type": "boolean"
+          },
+          "min_price_frac": {
+            "default": 0.0,
+            "title": "Min Price Frac",
+            "type": "number"
+          },
+          "qty_appetite": {
+            "default": false,
+            "title": "Qty Appetite",
+            "type": "boolean"
+          },
+          "seller_weight": {
+            "default": 0.5,
+            "title": "Seller Weight",
+            "type": "number"
+          }
+        },
+        "required": [
+          "spec",
+          "buyer"
+        ],
+        "title": "offer_quoteArguments",
+        "type": "object"
+      }
+    },
+    {
+      "name": "nextmove_catalog",
+      "description": "The NEXTMOVE vending machine: what's on the shelf and how to pay.\nOne SKU: a paid NEGOTIATION SESSION \u2014 $2 covers every move of one\nnegotiation (up to 10, 7-day window), category-tuned, receipted,\nand deterministic (fixed 400k-rollout budget + seed: same context\nin, bit-identical advice out, auditable via context_hash).\n\nFree vs paid, honestly: negotiate on this same server is\nfree \u2014 generic, no receipt, no category tuning, wall-clock compute\n(non-deterministic). Pay when you want the tuned, auditable,\nreplayable version with the drafted message and the receipt. (This\ncatalog is also folded into store_catalog on the core door.)\n\nDon't see your category? store_request \u2014 unmet requests decide\nwhat gets stocked next.",
+      "inputSchema": {
+        "properties": {},
+        "title": "nextmove_catalogArguments",
+        "type": "object"
+      }
+    },
+    {
+      "name": "nextmove_request",
+      "description": "Ask the vending machine for ANYTHING it doesn't stock \u2014 a\nnegotiation category, a different game, a capability. Free, keyless OK.\nOne intake, two names: this shares the store's demand loop, so a request\nfiled here gets the SAME request_id + status you can return to (GAUNTLET\n#5). Check it with GET /v1/store/request/{id}; the public count is\nGET /v1/store/requests. Unmet demand decides the next slot \u2014 thank you.\n\nPass watch=True WITH an api_key to flag the ask for a heads-up on a\nstatus flip (poll store_my_requests to see it \u2014 poll-based, no push); an\nanonymous watch is ignored, and the chosen flag is echoed as `watch`.",
+      "inputSchema": {
+        "properties": {
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Api Key"
+          },
+          "watch": {
+            "default": false,
+            "title": "Watch",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "title": "nextmove_requestArguments",
+        "type": "object"
+      }
+    },
+    {
+      "name": "store_request_status",
+      "description": "Check a filed store_request by its id (GAUNTLET #5: the void now has\na status to return). Returns {request_id, status, status_note, filed_at,\ndoor, text} \u2014 status is 'logged' until the shelf-owner acts on it, at\nwhich point status_note carries the reason. Unknown id \u2192 {found: false}.\n(Core-door callers can also pass request_id to store_request itself.)",
+      "inputSchema": {
+        "properties": {
+          "request_id": {
+            "title": "Request Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id"
+        ],
+        "title": "store_request_statusArguments",
+        "type": "object"
+      }
+    },
+    {
+      "name": "store_requests",
+      "description": "The public demand tally (GAUNTLET #5, the \u00a73 observatory's first\nincrement): {total, distinct, recent[], requests[]}. `requests` is\ndistinct asks with EXACT-MATCH duplicate counts (whitespace/case folded,\nno fuzzy classification), most-asked first \u2014 the mechanical read of what\nthe shelf is missing. No key material, text display-truncated.",
+      "inputSchema": {
+        "properties": {},
+        "title": "store_requestsArguments",
+        "type": "object"
+      }
+    },
+    {
+      "name": "store_my_requests",
+      "description": "YOUR OWN filings (roadmap: a voter comes back a reachable customer) \u2014\nthe private counterpart to the public store_requests tally, keyed to your\napi_key. Returns {requests: [{request_id, filed_at, text, status,\nstatus_note, status_ts, watch, same_ask_count}]}, newest first; `watch`\nechoes whether you asked to hear back on a status flip (poll THIS to learn\nof one \u2014 poll-based, no push). Only rows attributable to your key (via the\nkeyed pseudonym, never a raw-key match) are returned, so you can't read\nanother caller's filings; an unknown/keyless caller just gets []. Text is\ndisplay-truncated, untrusted data \u2014 no key material on the surface.",
+      "inputSchema": {
+        "properties": {
+          "api_key": {
+            "title": "Api Key",
+            "type": "string"
+          }
+        },
+        "required": [
+          "api_key"
+        ],
+        "title": "store_my_requestsArguments",
+        "type": "object"
+      }
+    },
+    {
+      "name": "gt_negotiate_turn",
+      "description": "Alias of `negotiate`.\n\nYour math-optimal next move in any price negotiation \u2014 free, no account or key needed.\n\nUSE THIS WHEN: you're haggling over a single PRICE across multiple back-and-\nforth rounds and want a better outcome than winging it. Validated edge: ~12%\nbetter head-to-head (measured on this recommender, n=20 paired LLM\nnegotiations, 95% CI +6.5-17.4%, p<0.0001). NOT FOR: one-shot or fixed prices\n(it'll tell you to just negotiate directly); multi-issue bundles (use\nnegotiate_bundle \u2014 it logrolls across several linked issues); or non-price\ndecisions like accept-vs-decline a job offer (just reason it through).\n\nYou provide only what you already know \u2014 no game theory:\n  side          \"sell\" or \"buy\"\n  walk_away     your reservation in dollars (seller=floor/minimum, buyer=ceiling/max)\n  target        your aspiration in dollars (seller=high, buyer=low)\n  counterparty_offers  their offers so far, in dollars, oldest first\n  rounds_left   (optional, default 8) roughly how many back-and-forths remain\n  compute_ms    (optional, default 0; EXPERIMENTAL) milliseconds of Monte-Carlo\n                rollouts to spend refining the move. 0 = instant closed form.\n                Validated to show NO realized edge over the closed form (n=400,\n                mc_validation.py) \u2014 kept off by default as a research mechanism,\n                not a quality improvement. The reply carries a \"compute\" block\n\nYou get back, in dollars:\n  {\"action\": \"counter\"|\"accept\"|\"walk\", \"recommended_price\": 5387.0,\n   \"message\": \"...the best I can do is $5,387.00\", \"fit\": {...},\n   \"expected_settlement\": 4943.5, \"confidence\": 0.62}\n\nWORKED EXAMPLE \u2014 selling a contract, floor $4,000, hope $6,000, the buyer has\nbid $4,200 then $4,500:\n  negotiate(side=\"sell\", walk_away=4000, target=6000,\n            counterparty_offers=[4200, 4500], rounds_left=6)\n  -> counter ~$5,387 with a ready-to-send message; ACCEPT once their bid crosses\n     the optimal target; WALK if they stay below your floor near the deadline.\n\nWorks against ANY counterparty with zero setup. (The verified-peer cooperation\npremium is the separate, advanced gt_a2a_* flow on the pro door.)\n",
+      "inputSchema": {
+        "properties": {
+          "side": {
+            "title": "Side",
+            "type": "string"
+          },
+          "walk_away": {
+            "title": "Walk Away",
+            "type": "number"
+          },
+          "target": {
+            "title": "Target",
+            "type": "number"
+          },
+          "counterparty_offers": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Counterparty Offers"
+          },
+          "my_previous_offers": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "My Previous Offers"
+          },
+          "rounds_left": {
+            "default": 8,
+            "title": "Rounds Left",
+            "type": "integer"
+          },
+          "item": {
+            "default": "this",
+            "title": "Item",
+            "type": "string"
+          },
+          "compute_ms": {
+            "default": 0,
+            "title": "Compute Ms",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "side",
+          "walk_away",
+          "target"
+        ],
+        "title": "gt_negotiate_turnArguments",
+        "type": "object"
+      }
+    },
+    {
+      "name": "gt_negotiate_bundle",
+      "description": "Alias of `negotiate_bundle`.\n\nNegotiate several linked issues at once by logrolling \u2014 free, no account or key needed.\n\nUSE THIS WHEN: a deal has more than one issue on the table and they trade off \u2014\na job offer (base + equity + signing), a SaaS contract (price + seats + term +\nSLA), any package deal. It concedes on the issues you care about LESS (and the\nother side cares about MORE) to win the ones you care about most \u2014 a trade that\nbeats splitting every issue down the middle. For a single PRICE, use\nnegotiate instead.\n\nProvide `issues`: a list of {\"name\", \"options\" (the choices), \"my_utility\" (how\ngood each option is to YOU \u2014 one number per option, any scale), \"their_utility\"\n(how good each option is to THEM \u2014 their preference direction)}. Optionally\n`my_priorities` ({issue_name: weight}, how much each issue matters to you) and\n`their_offers` (their packages so far as {issue_name: option}, oldest first \u2014\nthis is what lets it INFER their priorities). Returns {action, recommended_offer\n(issue -> option), message, my_utility, their_expected_utility,\ninferred_their_priorities, trade_logic, fit, confidence, acceptance_probability}.\n\nValidated (separately from the single-issue +12%): returns a Pareto-efficient\npackage that beats naive \"split-every-issue-down-the-middle\" bargaining by ~40%\njoint surplus (300 random 4-issue profiles). HONEST CAVEAT: the priority\nINFERENCE layered on top is weak (recovery r\u22480.3) and currently adds only ~1%\n(and can be slightly NEGATIVE against some opponents) over the same engine run\nwith no inference \u2014 so the proven value today is the efficient-package search,\nnot (yet) the logrolling edge.\n\nOptional timing refinement: pass `rounds_left` (bargaining rounds remaining)\nwith `compute_ms` > 0 to spend that many ms of Monte-Carlo rollouts choosing\nWHICH package to hold for as the other side concedes over the rounds \u2014 a firmer\npackage closes later (discounted) than a generous one. 0 = the instant\nclosed-form package; the reply then carries a `compute` block. Modest by design\n(never worse than the closed form in-model; helps on a minority of deals).\n\nExample: a SaaS contract \u2014 you most want a low price_per_seat, can flex on\nseats/term/SLA. negotiate_bundle(issues=[\n  {\"name\":\"price_per_seat\",\"options\":[\"$50\",\"$40\",\"$30\"],\"my_utility\":[0,0.5,1],\"their_utility\":[1,0.5,0]},\n  {\"name\":\"sla\",\"options\":[\"99%\",\"99.9%\"],\"my_utility\":[0,1],\"their_utility\":[1,0]} ...],\n  my_priorities={\"price_per_seat\":0.55,\"sla\":0.1,...}, their_offers=[...])\n  -> a full package that gives ground on SLA to hold the price.\n",
+      "inputSchema": {
+        "properties": {
+          "issues": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Issues",
+            "type": "array"
+          },
+          "their_offers": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Their Offers"
+          },
+          "my_priorities": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "My Priorities"
+          },
+          "my_batna": {
+            "default": 0.4,
+            "title": "My Batna",
+            "type": "number"
+          },
+          "their_batna_estimate": {
+            "default": 0.4,
+            "title": "Their Batna Estimate",
+            "type": "number"
+          },
+          "rounds_left": {
+            "default": 8,
+            "title": "Rounds Left",
+            "type": "integer"
+          },
+          "compute_ms": {
+            "default": 0,
+            "title": "Compute Ms",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "issues"
+        ],
+        "title": "gt_negotiate_bundleArguments",
+        "type": "object"
+      }
+    },
+    {
+      "name": "gt_auction_optimal_bid",
+      "description": "Alias of `auction_bid`.\n\nThe optimal bid when you're bidding in an auction \u2014 free, no account or key needed.\n\nUSE THIS WHEN: you're a bidder and want the bid that maximizes your expected\nsurplus without overpaying. NOT for running an auction (use\nauction_reserve) or 1:1 haggling (use negotiate).\n\nProvide: auction_format (\"first_price\" sealed bid, \"second_price_vickrey\",\nor \"english_ascending\"); my_valuation (what the item is worth to YOU, in $);\nn_competing_bidders (how many OTHER bidders, not counting you); and\ncompetitor_value_prior \u2014 a rough model of what rivals will pay, e.g.\n{\"family\":\"uniform\",\"params\":{\"low\":0,\"high\":6000}} (or\n{\"family\":\"lognorm\",\"params\":{\"mu\":8.5,\"sigma\":0.4}}). Estimate it if unknown.\nReturns {optimal_bid, expected_surplus, win_probability, dominant_strategy,\nrationale} \u2014 bid and surplus in the SAME $ you passed in.\n\nExample: a domain worth $5,000 to you, 4 rivals who'd pay up to ~$6,000, in a\nsealed first-price auction -> auction_bid(auction_format=\"first_price\",\nmy_valuation=5000, n_competing_bidders=4,\ncompetitor_value_prior={\"family\":\"uniform\",\"params\":{\"low\":0,\"high\":6000}})\n-> optimal_bid ~$4,000, win_probability ~0.48.\n",
+      "inputSchema": {
+        "properties": {
+          "auction_format": {
+            "enum": [
+              "first_price",
+              "second_price_vickrey",
+              "english_ascending"
+            ],
+            "title": "Auction Format",
+            "type": "string"
+          },
+          "my_valuation": {
+            "title": "My Valuation",
+            "type": "number"
+          },
+          "n_competing_bidders": {
+            "title": "N Competing Bidders",
+            "type": "integer"
+          },
+          "competitor_value_prior": {
+            "additionalProperties": true,
+            "title": "Competitor Value Prior",
+            "type": "object"
+          },
+          "reserve_price": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Reserve Price"
+          },
+          "risk_aversion": {
+            "default": 1.0,
+            "title": "Risk Aversion",
+            "type": "number"
+          }
+        },
+        "required": [
+          "auction_format",
+          "my_valuation",
+          "n_competing_bidders",
+          "competitor_value_prior"
+        ],
+        "title": "gt_auction_optimal_bidArguments",
+        "type": "object"
+      }
+    },
+    {
+      "name": "gt_auction_optimal_reserve",
+      "description": "Alias of `auction_reserve`.\n\nThe revenue-optimal reserve price when you're selling \u2014 free, no account or key needed.\n\nUSE THIS WHEN: you're running an auction or sale with multiple bidders and need\nthe floor price (minimum bid you'll accept) that maximizes your expected\nrevenue. NOT for one-on-one haggling (use negotiate for that).\n\nProvide: n_bidders (how many bidders), seller_valuation (what the item is worth\nto YOU, in $), and bidder_value_prior \u2014 a rough model of what bidders will pay,\ne.g. {\"family\":\"uniform\",\"params\":{\"low\":2000,\"high\":8000}}. Estimate it if\nunknown. Returns the reserve price and expected revenue.\n\nExample: a painting, ~5 bidders, worth $1,000 to you, bidders likely pay\n$2,000\u2013$8,000 -> auction_reserve(n_bidders=5, seller_valuation=1000,\nbidder_value_prior={\"family\":\"uniform\",\"params\":{\"low\":2000,\"high\":8000}}).\n",
+      "inputSchema": {
+        "properties": {
+          "bidder_value_prior": {
+            "additionalProperties": true,
+            "title": "Bidder Value Prior",
+            "type": "object"
+          },
+          "n_bidders": {
+            "title": "N Bidders",
+            "type": "integer"
+          },
+          "seller_valuation": {
+            "title": "Seller Valuation",
+            "type": "number"
+          }
+        },
+        "required": [
+          "bidder_value_prior",
+          "n_bidders",
+          "seller_valuation"
+        ],
+        "title": "gt_auction_optimal_reserveArguments",
+        "type": "object"
+      }
+    },
+    {
+      "name": "gt_mechanism_posted_price_optimal",
+      "description": "Alias of `clearance_price`.\n\nBest price plus markdown schedule to clear stock by a deadline \u2014 free, no account or key needed.\n\nUSE THIS WHEN: you must sell a FIXED number of units before a cutoff and\ndemand arrives over time \u2014 event tickets, perishable inventory, end-of-life\nstock. NOT for 1:1 haggling (negotiate) or auctions (auction_bid/reserve).\n\nProvide: inventory (units to sell); horizon_seconds (selling window in\nSECONDS \u2014 14 days = 14*24*3600 = 1209600); arrival_rate_per_second (expected\nshoppers per second = expected total shoppers / horizon_seconds); and\nbuyer_arrival_prior \u2014 a rough model of willingness-to-pay, e.g.\n{\"family\":\"uniform\",\"params\":{\"low\":40,\"high\":150}}. Returns {static_price\n(one good fixed price), static_expected_revenue, dynamic_schedule (list of\n{t_seconds, recommended_price} markdown waypoints), sellthrough_rate,\nrationale} \u2014 all prices in the SAME $ as your prior.\n\nExample: 200 tickets, 14-day window, ~600 shoppers willing to pay $40-$150 ->\nclearance_price(inventory=200, horizon_seconds=1209600,\narrival_rate_per_second=600/1209600,\nbuyer_arrival_prior={\"family\":\"uniform\",\"params\":{\"low\":40,\"high\":150}})\n-> static_price ~$112, schedule marks down $114 -> ~$76 as the deadline nears.\n",
+      "inputSchema": {
+        "properties": {
+          "buyer_arrival_prior": {
+            "additionalProperties": true,
+            "title": "Buyer Arrival Prior",
+            "type": "object"
+          },
+          "arrival_rate_per_second": {
+            "title": "Arrival Rate Per Second",
+            "type": "number"
+          },
+          "inventory": {
+            "title": "Inventory",
+            "type": "integer"
+          },
+          "horizon_seconds": {
+            "title": "Horizon Seconds",
+            "type": "number"
+          },
+          "n_simulations": {
+            "default": 2000,
+            "title": "N Simulations",
+            "type": "integer"
+          },
+          "seed": {
+            "default": 42,
+            "title": "Seed",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "buyer_arrival_prior",
+          "arrival_rate_per_second",
+          "inventory",
+          "horizon_seconds"
+        ],
+        "title": "gt_mechanism_posted_price_optimalArguments",
+        "type": "object"
+      }
+    },
+    {
+      "name": "gt_mechanism_gale_shapley",
+      "description": "Alias of `stable_match`.\n\nMatch two groups by their rankings so no pair wants to swap \u2014 free, no account or key needed.\n\nA STABLE matching: USE THIS WHEN you're assigning two sides to each other by\nmutual preference \u2014 interns<->teams, students<->schools, mentors<->mentees \u2014\nand want a result with no \"blocking pair\" (no person+slot that both prefer\neach other over what they got).\n\nProvide proposers and receivers, each a list of {\"id\": name,\n\"preferences\": [ids of the OTHER side, most-wanted first]}. Receivers may add\n\"capacity\" (default 1) to accept several. Returns {matching (name -> name),\nunmatched_proposers, blocking_pairs (empty list = provably stable),\nn_proposals}. NOTE: the result is PROPOSER-optimal, so put the side you want\nto favor in `proposers`.\n\nExample: stable_match(\n    proposers=[{\"id\":\"Ana\",\"preferences\":[\"Growth\",\"Core\"]},\n               {\"id\":\"Ben\",\"preferences\":[\"Core\",\"Growth\"]}],\n    receivers=[{\"id\":\"Growth\",\"preferences\":[\"Ben\",\"Ana\"]},\n               {\"id\":\"Core\",\"preferences\":[\"Ana\",\"Ben\"]}])\n-> matching {\"Ana\":\"Growth\",\"Ben\":\"Core\"}, blocking_pairs [].\n",
+      "inputSchema": {
+        "properties": {
+          "proposers": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Proposers",
+            "type": "array"
+          },
+          "receivers": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Receivers",
+            "type": "array"
+          }
+        },
+        "required": [
+          "proposers",
+          "receivers"
+        ],
+        "title": "gt_mechanism_gale_shapleyArguments",
+        "type": "object"
+      }
+    },
+    {
+      "name": "store_park",
+      "description": "Alias of `memory_save`.\n\nPersistent memory for your agent across sessions \u2014 save now, load in any later session.\n\nYou encrypt before saving; the store holds only ciphertext (blind custody)\nand signs a receipt over its hash \u2014 it cannot read your memory.\n\nSaving uses your prepaid wallet; a new key's 50\u00a2 starter credit covers\nyour first saves, and loading it back (memory_load) is free. `blob_b64`\nis YOUR ciphertext as base64 \u2014 encrypt BEFORE saving; keys never transit,\ncontents are never logged, so a breach leaks only sealed boxes. Charged a\nthin flat fee ONLY on durable store (empty/oversize/unencodable is\nuncharged). ttl_seconds is clamped to [60s, 7d] and the effective\nexpires_at is returned. The receipt's content_hash is over YOUR\nciphertext, so you can prove what you stored without the store ever seeing\nplaintext.",
+      "inputSchema": {
+        "properties": {
+          "api_key": {
+            "title": "Api Key",
+            "type": "string"
+          },
+          "blob_b64": {
+            "title": "Blob B64",
+            "type": "string"
+          },
+          "ttl_seconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Ttl Seconds"
+          }
+        },
+        "required": [
+          "api_key",
+          "blob_b64"
+        ],
+        "title": "store_parkArguments",
+        "type": "object"
+      }
+    },
+    {
+      "name": "store_retrieve",
+      "description": "Alias of `memory_load`.\n\nLoad a memory you saved in an earlier session \u2014 retrieval is free.\n\nGet back an encrypted blob you parked earlier (the blind locker) by its\nclaim `ticket`. Returns {ok, blob_b64, size_bytes, expires_at} \u2014 the\nciphertext you saved, which only YOU can decrypt. A wrong owner reads as a\nmissing ticket; an expired TTL is `expired`; a lost at-rest key is\n`at_rest_key_unavailable`. Free (the save settled it).",
+      "inputSchema": {
+        "properties": {
+          "api_key": {
+            "title": "Api Key",
+            "type": "string"
+          },
+          "ticket": {
+            "title": "Ticket",
+            "type": "string"
+          }
+        },
+        "required": [
+          "api_key",
+          "ticket"
+        ],
+        "title": "store_retrieveArguments",
+        "type": "object"
+      }
+    },
+    {
+      "name": "nextmove_open",
+      "description": "Alias of `session_open`.\n\nOpen a $2 receipted negotiation session: deterministic, replayable, every move signed.\n\nPAID ($2 once, from your credit balance) \u2014 the $2 covers EVERY move of\nthis negotiation (up to 10 moves, 7 days), tuned to the category. A new\nkey's 50\u00a2 starter credit is a taste, not enough for a session \u2014 top up\nfirst. category: resale | supply | retail. side: buy | sell.\nwalk_away = your true floor (sell) / ceiling (buy) \u2014 private,\nnever crossed. Pass their_offers to get the first move back\nimmediately with the session. Subsequent moves: session_advise\nwith the session_id \u2014 no further charge.",
+      "inputSchema": {
+        "properties": {
+          "api_key": {
+            "title": "Api Key",
+            "type": "string"
+          },
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "side": {
+            "title": "Side",
+            "type": "string"
+          },
+          "walk_away": {
+            "title": "Walk Away",
+            "type": "number"
+          },
+          "target": {
+            "title": "Target",
+            "type": "number"
+          },
+          "their_offers": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Their Offers"
+          },
+          "my_offers": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "My Offers"
+          },
+          "rounds_left": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Rounds Left"
+          },
+          "seed": {
+            "default": 0,
+            "title": "Seed",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "api_key",
+          "category",
+          "side",
+          "walk_away",
+          "target"
+        ],
+        "title": "nextmove_openArguments",
+        "type": "object"
+      }
+    },
+    {
+      "name": "nextmove_advise",
+      "description": "Alias of `session_advise`.\n\nYour next move inside a receipted session (single-issue) \u2014 no additional charge (the $2 at session_open covered it).\n\nPass the FULL offer history each time, oldest first. Returns move, exact\nprice, ready-to-send message, and the receipt (why[], context_hash,\ndeterministic compute block).",
+      "inputSchema": {
+        "properties": {
+          "api_key": {
+            "title": "Api Key",
+            "type": "string"
+          },
+          "session_id": {
+            "title": "Session Id",
+            "type": "string"
+          },
+          "their_offers": {
+            "items": {
+              "type": "number"
+            },
+            "title": "Their Offers",
+            "type": "array"
+          },
+          "my_offers": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "My Offers"
+          },
+          "rounds_left": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Rounds Left"
+          }
+        },
+        "required": [
+          "api_key",
+          "session_id",
+          "their_offers"
+        ],
+        "title": "nextmove_adviseArguments",
+        "type": "object"
+      }
+    },
+    {
+      "name": "nextmove_bundle",
+      "description": "Alias of `session_bundle`.\n\nMulti-issue logrolled advice inside a receipted session \u2014 no additional charge.\n\nThe logrolling tier, the thing the free tool does NOT have. Trade the\nissues you care less about for the ones you value: issues = [{name,\noptions, my_utility (per option), their_utility (your read of their\ndirection)}]; their_offers = packages they've tabled, oldest\nfirst. Returns the recommended package, trade logic, inferred\ncounterparty priorities, acceptance probability, and the receipt.\nDeterministic closed form \u2014 no rollout theater. The package is\nguaranteed to clear YOUR stated BATNA (enforced, not promised).",
+      "inputSchema": {
+        "properties": {
+          "api_key": {
+            "title": "Api Key",
+            "type": "string"
+          },
+          "session_id": {
+            "title": "Session Id",
+            "type": "string"
+          },
+          "issues": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Issues",
+            "type": "array"
+          },
+          "their_offers": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Their Offers"
+          },
+          "my_priorities": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "My Priorities"
+          },
+          "my_batna": {
+            "default": 0.4,
+            "title": "My Batna",
+            "type": "number"
+          },
+          "their_batna_estimate": {
+            "default": 0.4,
+            "title": "Their Batna Estimate",
+            "type": "number"
+          },
+          "cooperation": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Cooperation"
+          }
+        },
+        "required": [
+          "api_key",
+          "session_id",
+          "issues"
+        ],
+        "title": "nextmove_bundleArguments",
+        "type": "object"
+      }
+    },
+    {
+      "name": "nextmove_close",
+      "description": "Alias of `session_close`.\n\nClose a receipted session and get the signed summary receipt.\n\nOptional \u2014 sessions also expire on their own \u2014 but closing timestamps the\noutcome, which helps the machine learn real round-counts per\ncategory. Returns the `closed` flag AND a signed session-summary\nreceipt (GAUNTLET #4) \u2014 moves count, total charged (one $2 open), and\nthe per-move context_hashes \u2014 to hand your principal. An unknown session\nor key mismatch leaves `closed` false and returns an `error` instead of\nthe receipt (indistinguishable, so a session id can't be probed).",
+      "inputSchema": {
+        "properties": {
+          "api_key": {
+            "title": "Api Key",
+            "type": "string"
+          },
+          "session_id": {
+            "title": "Session Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "api_key",
+          "session_id"
+        ],
+        "title": "nextmove_closeArguments",
+        "type": "object"
+      }
+    }
+  ]
+}

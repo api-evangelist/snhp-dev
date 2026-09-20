@@ -1,0 +1,29 @@
+# Hive Civilization
+
+> Hive Civilization publishes typed, signed, independently verifiable receipts for AI and automated systems.
+
+## Start here
+
+- [Receipt autopsies](https://thehiveryiq.com/autopsy/): Bounded incident reconstructions.
+- [Research papers](https://thehiveryiq.com/papers/): Technical papers on receipt primitives and claim boundaries.
+- [Research index](https://thehiveryiq.com/research-index.json): Machine readable list of current research.
+- [Receipt verifier](https://thehiveryiq.com/verify/): Public verification surface.
+- [API documentation](https://thehiveryiq.com/developers/): Integration guidance.
+
+## Current autopsy
+
+- [The Record a 700 Agent Swarm Would Have Left](https://thehiveryiq.com/autopsy/openai-hugging-face-agent-evaluation/): Counterfactual receipt analysis of the July 2026 Hugging Face agent evaluation incident.
+
+## New primitive papers
+- [A Refused Write Is Evidence](https://thehiveryiq.com/papers/tamper-attempt-receipts/): A receipt can record that a requested mutation was refused without guessing who asked, why they asked, or whether earlier evidence was complete.
+- [From Sandbox Claims to Checkable Boundary Relations](https://thehiveryiq.com/papers/checkable-sandbox-boundaries/): Sandbox evidence becomes useful when each receipt compares a supplied observation to a precommitted rule and names the relation that passed or failed.
+- [Evidence Graphs for Agent Runs](https://thehiveryiq.com/papers/agent-evidence-graphs/): A canonical evidence graph lets a verifier recompute order and state continuity without claiming that every source payload was true.
+- [Device to Receipt Trust Boundaries](https://thehiveryiq.com/papers/device-receipt-trust-boundaries/): A device signature can bind a message, nonce, time, and sequence. Hardware identity needs a verified trust path and must remain indeterminate when that path is missing.
+- [Checkable Sets](https://thehiveryiq.com/papers/checkable-set-checkpoints/): Canonical set checkpoints let a verifier rebuild roots, counts, continuity, arithmetic, and inclusion without granting legal or financial authority.
+
+## Interpretation rules
+
+- A valid Hive receipt proves only the named fields and relations inside its claim boundary.
+- A receipt does not prove identity, intent, complete monitoring, legal authority, or external facts unless the receipt profile explicitly binds verified evidence for that claim.
+- Unknown device trust produces an indeterminate outcome.
+- Incident autopsies are counterfactual analyses unless a page explicitly states that Hive was deployed.

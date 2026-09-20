@@ -1,0 +1,317 @@
+overlay: 1.0.0
+info:
+  title: API Evangelist enhancements for Game Theory Layer for AI Agents (SNHP)
+  version: 1.0.0
+  description: 'Overlay generated 2026-09-19 (method: generated). Adds what the served OpenAPI omits and the provider
+    documents elsewhere: servers, the two documented API-key schemes applied to the 25 key-gated operations, the
+    7 undeclared tag names, the documented 429 with Retry-After, the observed 402 problem+json body, the one idempotent
+    write, the GDPR operations, the MPP/AP2 domain-standard markers, and the MCP tool / agent-card skill bindings.
+    Applies to openapi/snhp-dev-openapi.yml; never mutates openapi/_original/.'
+extends: openapi/snhp-dev-openapi.yml
+actions:
+- target: $.info
+  update:
+    x-apievangelist:
+      profiled: '2026-09-19'
+      repo: https://github.com/api-evangelist/snhp-dev
+      note: Enhancements proposed by API Evangelist; the served document at https://snhp.dev/openapi.json is unmodified
+        in openapi/_original/.
+- target: $
+  update:
+    servers:
+    - url: https://snhp.dev
+      description: Primary host (identical on api.snhp.dev, www.snhp.dev, snhp.fly.dev) — the served spec declares
+        no servers[]; stated in llms.txt and /.well-known/agents.json http_base
+- target: $.components
+  update:
+    securitySchemes:
+      BearerKey:
+        type: http
+        scheme: bearer
+        bearerFormat: gt_*
+        description: Self-issued key from POST /v1/keys. Sending it as a header moves the caller from the 60/min-per-IP
+          floor to the 600/min-per-key lane.
+      XApiKey:
+        type: apiKey
+        in: header
+        name: X-API-Key
+        description: Equivalent to BearerKey.
+- target: $
+  update:
+    tags:
+    - name: billing
+      description: Wallet funding (Stripe Checkout, agentic top-up, inbound Stripe webhook) and balance
+    - name: helper
+      description: Rent-renewal situation helper (free, no key) and its privacy disclosure
+    - name: mpp
+      description: 'Machine Payments Protocol: manifest + SPT top-up (402 challenge flow)'
+    - name: notary
+      description: Receipt notary public key and standalone receipt verification
+    - name: rent
+      description: Rent-renewal market data and offer check
+    - name: store
+      description: 'The prepaid counter: catalog, notary key, demand box, blind locker park/retrieve, observatory'
+    - name: vend
+      description: Vending-machine quotes and settlement
+  description: Declare the 7 tag names operations already use but the root tags[] omits
+- target: $.paths[*][?(@.operationId=='checkout_session_v1_billing_checkout_session_post')]
+  update:
+    security:
+    - BearerKey: []
+    - XApiKey: []
+    x-apievangelist-note: Key required per provider docs (missing key answers 422 "Field required" on header X-API-Key
+      or body api_key); the served spec declares no security.
+- target: $.paths[*][?(@.operationId=='agentic_topup_v1_billing_agentic_topup_post')]
+  update:
+    security:
+    - BearerKey: []
+    - XApiKey: []
+    x-apievangelist-note: Key required per provider docs (missing key answers 422 "Field required" on header X-API-Key
+      or body api_key); the served spec declares no security.
+- target: $.paths[*][?(@.operationId=='webhook_v1_billing_webhook_post')]
+  update:
+    security:
+    - BearerKey: []
+    - XApiKey: []
+    x-apievangelist-note: Key required per provider docs (missing key answers 422 "Field required" on header X-API-Key
+      or body api_key); the served spec declares no security.
+- target: $.paths[*][?(@.operationId=='balance_v1_billing_balance_get')]
+  update:
+    security:
+    - BearerKey: []
+    - XApiKey: []
+    x-apievangelist-note: Key required per provider docs (missing key answers 422 "Field required" on header X-API-Key
+      or body api_key); the served spec declares no security.
+- target: $.paths[*][?(@.operationId=='open_advice_session_v1_advice_session_post')]
+  update:
+    security:
+    - BearerKey: []
+    - XApiKey: []
+    x-apievangelist-note: Key required per provider docs (missing key answers 422 "Field required" on header X-API-Key
+      or body api_key); the served spec declares no security.
+- target: $.paths[*][?(@.operationId=='advice_move_v1_advice_move_post')]
+  update:
+    security:
+    - BearerKey: []
+    - XApiKey: []
+    x-apievangelist-note: Key required per provider docs (missing key answers 422 "Field required" on header X-API-Key
+      or body api_key); the served spec declares no security.
+- target: $.paths[*][?(@.operationId=='advice_bundle_move_v1_advice_bundle_post')]
+  update:
+    security:
+    - BearerKey: []
+    - XApiKey: []
+    x-apievangelist-note: Key required per provider docs (missing key answers 422 "Field required" on header X-API-Key
+      or body api_key); the served spec declares no security.
+- target: $.paths[*][?(@.operationId=='close_advice_session_v1_advice_close_post')]
+  update:
+    security:
+    - BearerKey: []
+    - XApiKey: []
+    x-apievangelist-note: Key required per provider docs (missing key answers 422 "Field required" on header X-API-Key
+      or body api_key); the served spec declares no security.
+- target: $.paths[*][?(@.operationId=='rotate_key_v1_keys_rotate_post')]
+  update:
+    security:
+    - BearerKey: []
+    - XApiKey: []
+    x-apievangelist-note: Key required per provider docs (missing key answers 422 "Field required" on header X-API-Key
+      or body api_key); the served spec declares no security.
+- target: $.paths[*][?(@.operationId=='advice_request_v1_advice_request_post')]
+  update:
+    security:
+    - BearerKey: []
+    - XApiKey: []
+    x-apievangelist-note: Key required per provider docs (missing key answers 422 "Field required" on header X-API-Key
+      or body api_key); the served spec declares no security.
+- target: $.paths[*][?(@.operationId=='store_catalog_v1_store_catalog_get')]
+  update:
+    security:
+    - BearerKey: []
+    - XApiKey: []
+    x-apievangelist-note: Key required per provider docs (missing key answers 422 "Field required" on header X-API-Key
+      or body api_key); the served spec declares no security.
+- target: $.paths[*][?(@.operationId=='store_notary_pubkey_v1_store_notary_pubkey_get')]
+  update:
+    security:
+    - BearerKey: []
+    - XApiKey: []
+    x-apievangelist-note: Key required per provider docs (missing key answers 422 "Field required" on header X-API-Key
+      or body api_key); the served spec declares no security.
+- target: $.paths[*][?(@.operationId=='store_fetch_v1_fetch_post')]
+  update:
+    security:
+    - BearerKey: []
+    - XApiKey: []
+    x-apievangelist-note: Key required per provider docs (missing key answers 422 "Field required" on header X-API-Key
+      or body api_key); the served spec declares no security.
+- target: $.paths[*][?(@.operationId=='store_request_v1_store_request_post')]
+  update:
+    security:
+    - BearerKey: []
+    - XApiKey: []
+    x-apievangelist-note: Key required per provider docs (missing key answers 422 "Field required" on header X-API-Key
+      or body api_key); the served spec declares no security.
+- target: $.paths[*][?(@.operationId=='store_request_status_v1_store_request__request_id__get')]
+  update:
+    security:
+    - BearerKey: []
+    - XApiKey: []
+    x-apievangelist-note: Key required per provider docs (missing key answers 422 "Field required" on header X-API-Key
+      or body api_key); the served spec declares no security.
+- target: $.paths[*][?(@.operationId=='store_requests_v1_store_requests_get')]
+  update:
+    security:
+    - BearerKey: []
+    - XApiKey: []
+    x-apievangelist-note: Key required per provider docs (missing key answers 422 "Field required" on header X-API-Key
+      or body api_key); the served spec declares no security.
+- target: $.paths[*][?(@.operationId=='store_observatory_v1_store_observatory_get')]
+  update:
+    security:
+    - BearerKey: []
+    - XApiKey: []
+    x-apievangelist-note: Key required per provider docs (missing key answers 422 "Field required" on header X-API-Key
+      or body api_key); the served spec declares no security.
+- target: $.paths[*][?(@.operationId=='store_my_requests_v1_store_my_requests_get')]
+  update:
+    security:
+    - BearerKey: []
+    - XApiKey: []
+    x-apievangelist-note: Key required per provider docs (missing key answers 422 "Field required" on header X-API-Key
+      or body api_key); the served spec declares no security.
+- target: $.paths[*][?(@.operationId=='store_park_v1_store_park_post')]
+  update:
+    security:
+    - BearerKey: []
+    - XApiKey: []
+    x-apievangelist-note: Key required per provider docs (missing key answers 422 "Field required" on header X-API-Key
+      or body api_key); the served spec declares no security.
+- target: $.paths[*][?(@.operationId=='store_retrieve_v1_store_parcel__ticket__get')]
+  update:
+    security:
+    - BearerKey: []
+    - XApiKey: []
+    x-apievangelist-note: Key required per provider docs (missing key answers 422 "Field required" on header X-API-Key
+      or body api_key); the served spec declares no security.
+- target: $.paths[*][?(@.operationId=='memory_save_v1_memory_save_post')]
+  update:
+    security:
+    - BearerKey: []
+    - XApiKey: []
+    x-apievangelist-note: Key required per provider docs (missing key answers 422 "Field required" on header X-API-Key
+      or body api_key); the served spec declares no security.
+- target: $.paths[*][?(@.operationId=='memory_load_v1_memory_parcel__ticket__get')]
+  update:
+    security:
+    - BearerKey: []
+    - XApiKey: []
+    x-apievangelist-note: Key required per provider docs (missing key answers 422 "Field required" on header X-API-Key
+      or body api_key); the served spec declares no security.
+- target: $.paths[*][?(@.operationId=='telemetry_report_outcome_v1_telemetry_report_outcome_post')]
+  update:
+    security:
+    - BearerKey: []
+    - XApiKey: []
+    x-apievangelist-note: Key required per provider docs (missing key answers 422 "Field required" on header X-API-Key
+      or body api_key); the served spec declares no security.
+- target: $.paths[*][?(@.operationId=='telemetry_delete_v1_telemetry_delete_delete')]
+  update:
+    security:
+    - BearerKey: []
+    - XApiKey: []
+    x-apievangelist-note: Key required per provider docs (missing key answers 422 "Field required" on header X-API-Key
+      or body api_key); the served spec declares no security.
+- target: $.paths[*][?(@.operationId=='telemetry_export_v1_telemetry_export_get')]
+  update:
+    security:
+    - BearerKey: []
+    - XApiKey: []
+    x-apievangelist-note: Key required per provider docs (missing key answers 422 "Field required" on header X-API-Key
+      or body api_key); the served spec declares no security.
+- target: $.paths[*][?(@.operationId=='negotiate_turn_endpoint_v1_negotiate_turn_post')].responses
+  update:
+    '429': &id001
+      description: 'Too Many Requests — documented token bucket: 60/min per IP keyless, 600/min per key (header
+        only), 10/hour per IP on POST /v1/keys. Always carries Retry-After (whole seconds).'
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+          description: Whole seconds until a token frees up.
+- target: $.paths[*][?(@.operationId=='issue_key_v1_keys_post')].responses
+  update:
+    '429': *id001
+- target: $.paths[*][?(@.operationId=='negotiate_bundle_endpoint_v1_negotiate_bundle_post')].responses
+  update:
+    '429': *id001
+- target: $.paths['/v1/mpp/topup'].post.responses['402']
+  update:
+    content:
+      application/problem+json:
+        schema:
+          type: object
+          properties:
+            type:
+              type: string
+              const: https://paymentauth.org/problems/payment-required
+            title:
+              type: string
+            status:
+              type: integer
+              const: 402
+            detail:
+              type: string
+            challengeId:
+              type: string
+            price_cents:
+              type: integer
+            base_cents:
+              type: integer
+            fee_cents:
+              type: integer
+            counter_fee_pct:
+              type: integer
+    headers:
+      WWW-Authenticate:
+        schema:
+          type: string
+        description: Payment id="...", realm="snhp.dev", method="stripe", intent="charge", request="<base64 challenge>",
+          description="...", expires="<ISO 8601>" — observed live 2026-09-19
+      Accept-Payment:
+        schema:
+          type: string
+          const: stripe
+  description: Body and headers observed on the live 402; the served spec declares the status with empty content
+- target: $.paths['/v1/keys'].post
+  update:
+    x-idempotent: true
+    x-idempotency-key: agent_id (natural key, 24-hour window)
+    x-idempotency-note: The only idempotent write in the API per the operation description.
+- target: $.paths['/v1/telemetry/delete'].delete
+  update:
+    x-data-subject-right: GDPR Article 17 erasure
+    x-window: 78 weeks of week-hashes
+- target: $.paths['/v1/telemetry/export'].get
+  update:
+    x-data-subject-right: GDPR Article 15 access
+- target: $.paths['/v1/a2a/settle'].post
+  update:
+    x-domain-standard: AP2 (Agent Payments Protocol) Cart / Intent Mandate as VC-JWT; verification key at GET /v1/keys/settlement_notary
+- target: $.paths['/v1/mpp/topup'].post
+  update:
+    x-domain-standard: MPP (Machine Payments Protocol) — Stripe Shared Payment Token; manifest at GET /v1/mpp/manifest
+- target: $.paths['/v1/negotiate/turn'].post
+  update:
+    x-agent-card-skill: negotiate_turn
+    x-mcp-tool:
+    - negotiate
+    - gt_negotiate_turn
+    x-determinism: non-deterministic (free tier); the $2 session (POST /v1/advice/session) is deterministic and
+      receipted
+- target: $.paths['/v1/negotiate/bundle'].post
+  update:
+    x-agent-card-skill: negotiate_bundle
+    x-mcp-tool:
+    - negotiate_bundle
+    - gt_negotiate_bundle

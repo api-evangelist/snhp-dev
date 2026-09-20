@@ -1,0 +1,105 @@
+generated: '2026-09-19'
+method: searched
+source: >-
+  Artifacts harvested this run (well-known/, security/, lifecycle/, conformance/), the OpenAPI
+  operation summaries for /v1/telemetry/*, https://snhp.dev/llms.txt ("Telemetry (opt-in, off by
+  default)" and its GDPR paragraph), GET /v1/helper/privacy, GET /v1/store/catalog
+  (request_privacy, acceptable_use, locker privacy), the repository PRICING.md, and live probes of
+  the conventional regulatory paths on snhp.dev on 2026-09-19.
+checked: '2026-09-19'
+probe: true
+harvest_only: true
+harvest_only_note: >-
+  This file records WHAT SNHP publishes. It does not decide which regimes reach the operator —
+  that is the Kin Score regime map's job, not this artifact's.
+summary: >-
+  No legal pages at all — /terms, /privacy, /legal, /accessibility, /transparency, /trust,
+  /legal/subprocessors, /legal/dpa and /privacy/requests all 404, and the homepage links to none.
+  What the provider publishes instead is privacy-by-API: two GDPR operations declared in the
+  OpenAPI and documented as applying "regardless of EU residence" (DELETE /v1/telemetry/delete —
+  Article 17, sweeps 78 weeks; GET /v1/telemetry/export — Article 15), an opt-in-only telemetry
+  design with a published list of what is and is not stored, a per-tool privacy disclosure
+  endpoint for the rent helper (GET /v1/helper/privacy: never stored / stored / bucketed fields,
+  a no-resale commitment, an opt-out flag), and a blind-custody statement for agent memory. One
+  signal carries substance — a data-subject-request API — and it is recorded with the exact spec
+  location. Everything else is absent and the probes say so.
+signals:
+  data_subject_request:
+    present: true
+    pointer_type: DataSubjectRequest
+    url: https://snhp.dev/llms.txt
+    location: 'llms.txt, "Telemetry (opt-in, off by default)" -> "GDPR (apply regardless of EU residence)"'
+    api: https://snhp.dev/v1/telemetry/delete
+    api_operations:
+      - {operation: telemetry_delete_v1_telemetry_delete_delete, method: DELETE, path: /v1/telemetry/delete, summary_verbatim: 'GDPR Article 17 — delete all telemetry rows for this key', response: '{rows_deleted: N}', window_verbatim: 'Sweeps the last 78 weeks of week-hashes.'}
+      - {operation: telemetry_export_v1_telemetry_export_get, method: GET, path: /v1/telemetry/export, summary_verbatim: 'GDPR Article 15 — export all telemetry rows for this key', response: '{rows: [...]}'}
+    stated_verbatim: >-
+      "GDPR (apply regardless of EU residence): DELETE /v1/telemetry/delete (Article 17: erasure)
+      -> {rows_deleted: N} Sweeps the last 78 weeks of week-hashes. GET /v1/telemetry/export
+      (Article 15: access) -> {rows: [...]} Returns every row tied to any of your week-hashes within
+      the same window."
+    mechanism: api (authenticated by the same gt_* key that produced the rows)
+    scope: 'the opt-in telemetry corpus only — the rows are pseudonymous per-week hashes of the key; there is no account object beyond the key'
+    form: false
+    email: 'ryuxik@gmail.com (general contact; not stated as a privacy channel)'
+    stated_timeline: 'immediate (synchronous API response)'
+    rights_enumerated: [access (Art. 15), erasure (Art. 17)]
+    substance_basis: 'A callable, documented endpoint per right, declared in the machine contract — stronger than a request form. Recorded as present.'
+    probed: [{url: 'https://snhp.dev/openapi.json', status: 200}, {url: 'https://snhp.dev/llms.txt', status: 200}]
+published_privacy_statements_without_a_page:
+  items:
+  - source: https://snhp.dev/llms.txt
+    section: Telemetry (opt-in, off by default)
+    substance: 'Default collects nothing; two gates (issuance consent + per-call share_outcome) must both be true; stored = per-week HMAC key hash truncated to 128 bits, features quantized to a 0.02 grid, lists capped at 16, allowlisted vertical enum; NOT stored = wall-clock timestamps, raw key, free text, IP, user agent, request metadata.'
+  - source: https://snhp.dev/v1/helper/privacy
+    status: 200
+    substance: 'For the rent-renewal helper: enabled: false at probe time; never_stored[] (own-words description, exact figures, address/name/email/phone, IP/UA/referrer, cookies/accounts, timestamps finer than month), stored[] and bucketed_fields[] enumerated; commitment "We do not attempt to reidentify anyone ... do not sell it ... do not share it with data brokers or advertisers"; opt_out "Send no_telemetry: true with any request"; a not_advice disclaimer.'
+  - source: https://snhp.dev/v1/store/catalog
+    status: 200
+    substance: 'request_privacy (keyed hash of each request, no browsable history); locker privacy ("BLIND by construction: you encrypt BEFORE parking, we store ciphertext only and never decrypt, inspect, parse, or log it"); acceptable_use for the fetch slot (public-web only, no credentialed fetching, IP-literal/localhost refused).'
+  note: 'Recorded because they are real, dated-by-fetch privacy commitments; none of them is a privacy policy page, none names a controller, and none of them is a signal in the canonical list above.'
+absent_signals:
+  privacy_policy_page:
+    present: false
+    probes: [{url: 'https://snhp.dev/privacy', status: 404}, {url: 'https://snhp.dev/legal', status: 404}]
+    note: 'No PrivacyPolicy pointer emitted; homepage, research, certificate and helper pages link to no legal page.'
+  terms_of_service:
+    present: false
+    probes: [{url: 'https://snhp.dev/terms', status: 404}]
+    note: 'The store catalog carries contractual terms in JSON (no_refund, admission, acceptable_use) — terms inside an API response, not a Terms page. No TermsOfService pointer emitted.'
+  subprocessors:
+    present: false
+    probes: [{url: 'https://snhp.dev/legal/subprocessors', status: 404}]
+    note: 'Stripe (payments), Fly.io (hosting) and Anthropic (the optional dispute LLM, per pyproject) are observable from headers and source, not listed by the provider.'
+  data_residency:
+    present: false
+    probes: [{url: 'https://snhp.dev/docs/data-residency', status: 404}]
+    note: 'Fly.io edge; fly-request-id suffix -ewr suggests a US-East region, which is an inference and not a statement.'
+  incident_notification:
+    present: false
+    probes: [{url: 'https://snhp.dev/legal/dpa', status: 404}]
+  accessibility_conformance:
+    present: false
+    probes: [{url: 'https://snhp.dev/accessibility', status: 404}]
+  ai_transparency:
+    present: false
+    note: >-
+      The provider repeatedly states the product is "LLM-free in every judgment path" (agents.json,
+      server card, PRICING.md) and that the only LLM-touching routes are the off-by-default
+      /v1/dispute/* drafting routes, which PRICING.md and pyproject say call Anthropic server-side
+      with a $5/day cap. That is an architecture disclosure in a pricing document, not an AI
+      transparency notice to end users; not recorded as a signal.
+    probes: [{url: 'https://snhp.dev/ai/transparency', status: 404}]
+  training_data_summary: {present: false}
+  global_privacy_control: {present: false, note: 'No statement. Not tested by header, per the contract rule.'}
+  sbom: {present: false, note: 'Never derived. pyproject.toml lists dependencies, which is not an SBOM.', probes: [{url: 'https://snhp.dev/security/sbom', status: 404}]}
+  support_lifetime: {present: false, note: 'SLA is stated as best-effort with no support period (lifecycle/).'}
+  age_assurance: {present: false}
+  notice_and_action: {present: false}
+  transparency_report:
+    present: false
+    note: 'GET /v1/store/observatory is a public, citable telemetry observatory (slot volumes, demand tally, store-eaten shortfall) — an operational transparency surface, not a content/legal transparency report. Not recorded.'
+    probes: [{url: 'https://snhp.dev/transparency', status: 404}]
+  exit_assistance:
+    present: false
+    note: 'Agent memory is retrievable by ticket at any time within TTL and the engine is Apache-2.0 self-hostable, but no export/portability page exists; wallet credit is explicitly non-refundable with "no cashout path".'

@@ -1,0 +1,44 @@
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "protocolVersion": "2025-06-18",
+    "capabilities": {
+      "experimental": {},
+      "prompts": {
+        "listChanged": false
+      },
+      "resources": {
+        "subscribe": false,
+        "listChanged": false
+      },
+      "tools": {
+        "listChanged": false
+      }
+    },
+    "serverInfo": {
+      "name": "gametheory",
+      "version": "1.28.1",
+      "websiteUrl": "https://snhp.dev",
+      "icons": [
+        {
+          "src": "https://snhp.dev/favicon.svg",
+          "mimeType": "image/svg+xml",
+          "sizes": [
+            "any"
+          ]
+        },
+        {
+          "src": "https://snhp.dev/favicon.ico",
+          "mimeType": "image/x-icon",
+          "sizes": [
+            "48x48",
+            "32x32",
+            "16x16"
+          ]
+        }
+      ]
+    },
+    "instructions": "Free, one-call negotiation math for agents — no account, no key. START WITH `negotiate` (your math-optimal next move in any price haggle) or `negotiate_bundle` (several linked issues at once, logrolled); `score_deal`, `auction_bid`, `auction_reserve`, `clearance_price`, and `stable_match` round out the free math. When you need it ON THE RECORD, `session_open` opens a $2 receipted, replayable negotiation session (then session_advise / session_bundle / session_close). When your agent needs to REMEMBER, `memory_save` / `memory_load` are persistent cross-session memory — you encrypt before saving; the store holds only ciphertext (blind custody) and cannot read it. `store_catalog` shows the shelf and your balance; `store_request` files what we don't stock yet. Empirical anchor: the negotiate recommender is ~12% better head-to-head (n=20 paired LLM negotiations, p<0.0001). Power users: the FULL surface (verified agent-to-agent + AP2 settlement, first-strike attestation, auction design/sim, offer-graph engine, legacy names) is the pro door at /mcp/pro/."
+  }
+}

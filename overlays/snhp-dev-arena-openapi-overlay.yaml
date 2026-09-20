@@ -1,0 +1,27 @@
+overlay: 1.0.0
+info:
+  title: API Evangelist enhancements for SNHP Evolution Arena
+  version: 1.0.0
+  description: 'Overlay generated 2026-09-19 (method: generated). Adds the missing servers[] and marks the admin/hit
+    operations. Applies to openapi/snhp-dev-arena-openapi.yml.'
+extends: openapi/snhp-dev-arena-openapi.yml
+actions:
+- target: $
+  update:
+    servers:
+    - url: https://arena.snhp.dev
+      description: Arena host — the served spec declares no servers[]; llms.txt names arena.snhp.dev
+- target: $.info
+  update:
+    x-apievangelist:
+      profiled: '2026-09-19'
+      note: Public read surface for the always-on evolution sim, the gauntlet/PAR game and the divorce demo; POST
+        /arena/admin/{action} is an operator control and POST /arena/champion, /hit, /api/hit are write endpoints
+        with undeclared bodies.
+- target: $.paths['/arena/admin/{action}'].post
+  update:
+    x-apievangelist-note: Operator/admin control surface exposed in the public spec; no securityScheme declared.
+      Not exercised.
+- target: $.paths['/par/advise'].post
+  update:
+    x-backed-by: the SNHP engine (same math as snhp.dev POST /v1/negotiate/turn)

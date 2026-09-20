@@ -1,0 +1,66 @@
+generated: '2026-09-19'
+method: searched
+source: https://snhp.dev/llms.txt
+corroboration:
+  - https://snhp.dev/docs                     # Swagger UI
+  - https://snhp.dev/redoc                    # ReDoc
+  - https://snhp.dev/v1/store/catalog         # starter credit terms
+  - https://snhp.dev/dispute.html             # synthetic-data prototype
+  - https://snhp.dev/v1/catalog               # example_input / example_output per tool
+checked: '2026-09-19'
+summary: >-
+  There is no test mode, no sandbox host, no test key prefix and no magic test values — and the
+  provider's design mostly removes the need: the entire math surface is free and keyless against
+  production, every new key carries a one-time $0.50 starter credit ("so you can taste a slot
+  before you fund it"), the free /v1/negotiate/turn is explicitly the unreceipted rehearsal of the
+  $2 receipted session, and GET /v1/catalog publishes a worked example_input and example_output
+  for every tool. What does NOT exist is a way to exercise the paid path without spending real
+  (prepaid) money, or to mint a Stripe Shared Payment Token in test mode — the MPP manifest
+  reports settlement_api_version 2026-02-25.preview and live_ready: true with no test realm.
+test_mode:
+  separate_environment: false
+  test_key_prefix: none
+  live_key_prefix: gt_
+  note: 'One key namespace, one host. The Fly origin snhp.fly.dev is the same deployment, not a staging environment.'
+free_surface_as_sandbox:
+  keyless: true
+  operations: 'all Tier 0 math (negotiate, bundle, auction, mechanism, rent, helper, notary verify, memory_load, discovery)'
+  rate_limit: '60/min per IP keyless; 600/min with a key header'
+  documented_example_verbatim:
+    request: |
+      curl -s https://snhp.dev/v1/negotiate/turn -H 'content-type: application/json' \
+        -d '{"side":"sell","walk_away":4000,"target":6000,
+             "counterparty_offers":[4200,4500],"rounds_left":6}'
+    response_documented: '{"action":"counter","recommended_price":5386.6,"message":"Thanks for the offer. The best I can do on this is $5,386.60.","fit":{"score":"good"},"expected_settlement":4943.3}'
+    response_observed_2026_09_19: '{"action":"counter","recommended_price":5752.2,"message":"Thanks for the offer. The best I can do on this is $5,752.20.","rationale":"...","fit":{"score":"good","reason":"multi-round price negotiation with room to trade — our sweet spot"},"expected_settlement":5126.1,"confidence":0.95,"paid_alternative":"This free turn is unreceipted and non-deterministic; the $2 NEXTMOVE session adds deterministic replay, signed receipts, and persistent session state."}'
+    note: 'The documented and observed numbers differ (5386.6 vs 5752.2) — consistent with the provider''s own statement that the free turn is non-deterministic and with the README example (5752.2). Not a defect; a property an agent should know before comparing runs.'
+starter_credit:
+  amount_usd: 0.50
+  millicents: 50000
+  terms_verbatim: 'one-time, unconditional, no card required'
+  covers: 'first memory saves ($0.005–$0.01 each); NOT a $2 session ("A new key''s 50¢ starter credit is a taste, not enough for a session — top up first")'
+  how: 'POST /v1/keys {agent_id, contact_email, intended_use_summary} — no human approval'
+examples_in_contract:
+  location: 'GET /v1/catalog tools[].example_input / example_output'
+  count: 'one pair per catalogued tool'
+  note: 'Real request bodies an agent can replay; the 5,387 counter in the example is the documented (deterministic-seed) figure.'
+console:
+  name: Swagger UI
+  url: https://snhp.dev/docs
+  renderer: swagger-ui-dist@5 over /openapi.json (page title "Game Theory Layer for AI Agents - Swagger UI"); ReDoc at /redoc
+  authenticated: false
+  probed: [{url: 'https://snhp.dev/docs', status: 200}, {url: 'https://snhp.dev/redoc', status: 200}]
+  note: 'A console over production. Because the spec declares no securitySchemes there is no Authorize button; keyed calls must be made with a body api_key or from outside the console.'
+  arena: {url: 'https://arena.snhp.dev/docs', status: 200, note: 'Swagger UI for the Evolution Arena API'}
+synthetic_data_prototype:
+  url: https://snhp.dev/dispute.html
+  status: 200
+  verbatim: 'Prototype. Disputes are synthetic (generator: snhp/cs_negotiation_dataset.py). The negotiation is run by the real SNHP core — sell_next_offer / buy_next_offer via POST /v1/dispute/negotiate — so no outcomes are assumed. Not connected to any real platform.'
+  note: 'The only fixture-style data the provider publishes: generated refund disputes fed to the real engine. A demo, not a sandbox.'
+local_alternative:
+  install: 'pip install snhp / uvx snhp'
+  note: 'The engine is Apache-2.0 and self-hostable ("run your own instance and you depend on no one"); the whole FastAPI server ships in the package (extras prod). A developer can run the full API locally with no wallet — the closest thing to a sandbox the provider offers.'
+paid_path_test_gap:
+  mpp: 'No test realm; settlement_api_version 2026-02-25.preview, live_ready: true (GET /v1/mpp/manifest). Minting an SPT is buyer-side in Stripe.'
+  sessions: 'No free or test session; the first $2 is real money (prepaid, non-refundable).'
+  receipts: 'CAN be verified offline with no spend: GET /v1/store/notary_pubkey + the recipe in /v1/store/catalog receipts block.'

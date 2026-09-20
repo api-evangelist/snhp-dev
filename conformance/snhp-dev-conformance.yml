@@ -1,0 +1,135 @@
+generated: '2026-09-19'
+method: searched
+source: >-
+  openapi/snhp-dev-openapi.yml and openapi/snhp-dev-arena-openapi.yml (both live), well-known/
+  (live probes), a2a/ (live card), mcp/ (live initialize + tools/list), GET /v1/mpp/manifest, GET
+  /v1/store/catalog, the 402 challenge observed on POST /v1/mpp/topup, https://snhp.dev/llms.txt
+  and the repository's A2A_FLOW.md and PRICING.md.
+checked: '2026-09-19'
+summary: >-
+  SNHP conforms to the discovery specifications an agent needs to FIND and PAY it — OpenAPI 3.1.0
+  on two hosts, MCP 2025-06-18 with a SEP-1649 server card and an official-registry entry, an A2A
+  0.3.0 card at the canonical path (near-conformant), llms.txt, and — the domain standards — the
+  Machine Payments Protocol (MPP, Stripe Shared Payment Tokens) for agent-native payment and AP2
+  (Agent Payments Protocol) Cart/Intent mandates for settlement records, both declared IN the
+  contract and observed live. It conforms to almost none of the HTTP runtime conventions: no
+  servers[], no securitySchemes, no RFC 9457 outside the payment challenge, no RFC 9116, no
+  OAuth/OIDC, no RFC 8594, no rate-limit fields, no pagination, idempotency on one operation. The
+  provider also documents GDPR Article 15/17 endpoints in the API itself.
+standards:
+- id: openapi-3.1
+  conforms: true
+  evidence: >-
+    https://snhp.dev/openapi.json (200, 104,094 B) parses as OpenAPI 3.1.0 with 74 operations, 78
+    schemas and 6 root tags; https://arena.snhp.dev/openapi.json (200, 20,968 B) is a second 3.1.0
+    document with 31 operations. Both FastAPI-generated, both saved verbatim in openapi/_original/.
+    Advertised by llms.txt, /v1/catalog openapi_url and agents.json endpoints.openapi.
+- id: openapi-servers-declared
+  conforms: false
+  evidence: 'Neither served document has a servers[] block. Added in the refined copies and proposed in overlays/, never in the originals.'
+- id: openapi-security-declared
+  conforms: false
+  evidence: >-
+    No components.securitySchemes and no security[] on any of the 74 operations, while the docs
+    require a gt_* key on the store, billing, advice, telemetry and key-rotation operations (~25
+    operations) and a missing key answers 422. See authentication/.
+- id: openapi-operations-tagged
+  conforms: partial
+  evidence: 'Every operation carries a tag, but 7 of the 13 tag names used (billing, store, helper, mpp, vend, notary, rent) are not declared in the root tags[] (which lists negotiation, auctions, mechanism, offer, discovery, telemetry).'
+- id: openapi-response-schemas
+  conforms: partial
+  evidence: 'Every 200 response is declared as an untyped {"type":"object","additionalProperties":true}; only request bodies are typed (78 schemas). The 400 and 402 responses have empty content. An agent cannot learn a response shape from the contract.'
+- id: mcp-2025-06-18
+  conforms: true
+  evidence: 'initialize on https://snhp.dev/mcp/ returned protocolVersion 2025-06-18 with tools/resources/prompts capabilities; tools/list returned 15 tools with inputSchema and annotations; a read-only tools/call succeeded. Pro door likewise with 54 tools. See mcp/.'
+- id: mcp-server-card-sep-1649
+  conforms: true
+  evidence: 'https://snhp.dev/.well-known/mcp/server-card.json (200, 49,409 B) carries serverInfo, capabilities, authentication {required: false}, transport {streamable-http, url}, tools[15] with inputSchema, resources[], prompts[]. The card''s own summary line says it exists so "registries skip a live scan". Saved in well-known/.'
+- id: mcp-official-registry
+  conforms: true
+  evidence: 'registry.modelcontextprotocol.io lists io.github.ryuxik/snhp (0.4.0, 2026-07-23, active) with remote https://api.snhp.dev/mcp/; the repository ships server.json. Name mismatch: the server card calls itself io.github.ryuxik/snhp-negotiation.'
+- id: a2a-agent-card
+  conforms: partial
+  evidence: 'Served at the canonical /.well-known/agent-card.json (200) with protocolVersion 0.3.0; capabilities is an object, skills an array; no preferredTransport -> graded near-conformant. The url is not an A2A endpoint (405). See a2a/.'
+- id: a2a-protocol-endpoint
+  conforms: false
+  evidence: 'No JSON-RPC / gRPC / HTTP+JSON A2A task endpoint on any host: POST https://snhp.dev/ -> 405, /a2a and /v1/a2a -> 404. The "A2A flow" is six REST operations plus one MCP tool.'
+- id: llms-txt
+  conforms: true
+  evidence: 'https://snhp.dev/llms.txt (200, text/plain, 23,571 B) in llms.txt format (H1, blockquote, H2 sections with links); a companion /llms-full.txt (27,424 B) and a second llms.txt on arena.snhp.dev (3,526 B). Saved verbatim in llms/.'
+- id: mpp-machine-payments-protocol
+  conforms: true
+  domain_standard: true
+  evidence: >-
+    DECLARED IN THE CONTRACT: openapi/snhp-dev-openapi.yml operation mpp_topup_v1_mpp_topup_post
+    carries an x-payment-info extension {amount "240", currency usd, method stripe, intent charge,
+    description} and a declared 402 "Payment required; signed WWW-Authenticate: Payment
+    challenge." GET /v1/mpp/manifest returns {protocol: mpp, protocol_docs: https://mpp.dev, spec:
+    https://docs.stripe.com/payments/machine/mpp, realm snhp.dev, accepted_method {stripe, fiat,
+    shared_payment_token}, settlement_api_version 2026-02-25.preview, flow[4], live_ready: true}.
+    OBSERVED LIVE 2026-09-19: POST /v1/mpp/topup with no credential -> 402 application/problem+json
+    + `WWW-Authenticate: Payment id=..., realm="snhp.dev", method="stripe", intent="charge",
+    request=..., expires=...` + `Accept-Payment: stripe`. The manifest says "npx mppx validate
+    reads" the x-payment-info block.
+- id: ap2-agent-payments-protocol
+  conforms: true
+  domain_standard: true
+  evidence: >-
+    DECLARED IN THE CONTRACT: settle_v1_a2a_settle_post is summarised "Emit signed AP2 Intent/Cart
+    mandates for the agreed deal" and its SettleRequest schema carries agreed_price, currency,
+    item, buyer_max_price, terms; keys_settlement_notary_v1_keys_settlement_notary_get is "Public
+    key for verifying AP2 Cart/Intent mandates (separate from the CA)" and returned an Ed25519 PEM
+    (200). The agent card skill `settle` is tagged [payments, ap2] and the card extension publishes
+    settlement_notary_public_key_pem. A2A_FLOW.md: settle "emits a signed AP2 Cart Mandate (a
+    non-repudiable VC-JWT naming both verified parties)". Not exercised (requires two verified
+    operators); conformance is recorded on the declaration + published key, not on a minted
+    mandate.
+- id: rfc9457-problem-details
+  conforms: partial
+  evidence: 'One response is RFC 9457: the MPP 402 (application/problem+json with type/title/status/detail). Every other error is FastAPI {"detail": ...}.'
+- id: rfc9116-security-txt
+  conforms: false
+  evidence: '/.well-known/security.txt 404 on all six hosts (well-known/).'
+- id: oauth2
+  conforms: false
+  evidence: 'No oauth2 scheme, no RFC 8414 / RFC 9728 documents, MCP authentication.required = false. Not applicable to the product''s auth model (self-issued opaque keys).'
+- id: oidc
+  conforms: false
+  evidence: '/.well-known/openid-configuration 404 everywhere.'
+- id: rfc8594-sunset
+  conforms: false
+  evidence: 'No Sunset or Deprecation header; no deprecation policy; legacy tool names kept as undated aliases (lifecycle/).'
+- id: ietf-ratelimit-headers
+  conforms: false
+  evidence: 'No RateLimit / RateLimit-Policy / X-RateLimit-* on a live 200; the documented signal is 429 + Retry-After only (rate-limits/).'
+- id: idempotency-key-header
+  conforms: false
+  evidence: 'No Idempotency-Key header anywhere; one operation (POST /v1/keys) is idempotent on a natural key for 24h (conventions/ coverage: partial).'
+- id: pagination
+  conforms: false
+  evidence: 'No list operation takes limit/cursor/offset/page; all return complete arrays (conventions/).'
+- id: gdpr-data-subject-endpoints
+  conforms: true
+  evidence: 'telemetry_delete_v1_telemetry_delete_delete ("GDPR Article 17 — delete all telemetry rows for this key", sweeps 78 weeks) and telemetry_export_v1_telemetry_export_get ("GDPR Article 15 — export all telemetry rows for this key") are declared in the OpenAPI and documented in llms.txt, which says they "apply regardless of EU residence". Recorded in regulatory/ as a data_subject_request API.'
+- id: ed25519-signed-receipts
+  conforms: true
+  evidence: 'Provider-defined, not an industry standard, recorded because it is verifiable: GET /v1/store/catalog publishes the receipt hash recipe (blake2b-128 over canonical JSON), the Ed25519 signing scheme, the notary PEM and its sha256 fingerprint, and the offline verify procedure; GET /v1/store/notary_pubkey (200) returns the same PEM with key_source: env.'
+- id: json-api
+  conforms: false
+- id: scim
+  conforms: false
+  evidence: 'not applicable'
+- id: fapi
+  conforms: false
+  evidence: 'not applicable'
+- id: rfc8615-well-known
+  conforms: true
+  evidence: 'Three real documents at /.well-known/ paths (agent-card.json, mcp/server-card.json, agents.json) and a 404 on a negative-control path (well-known/).'
+domain_standard_note: >-
+  The provider's market is agent-to-agent commerce; the standards that market is converging on are
+  MPP (agent-native payment) and AP2 (agent-authorised settlement records), and this contract
+  declares both — x-payment-info + the WWW-Authenticate: Payment challenge for MPP, and AP2
+  Cart/Intent mandates with a published verification key for settlement. Recorded as
+  domain_standard: true on those two rows with the exact spec locations above.
+compliance_program: none
+compliance_note: 'No SOC 2 / ISO 27001 / PCI / HIPAA / FedRAMP claim anywhere; no trust page (probe-security-programs.py: trust=none). No Compliance pointer is emitted. Card data never touches the provider: Stripe Checkout and Stripe Shared Payment Tokens ("the store never sees the card, only redeems a scoped token" — /v1/mpp/manifest).'

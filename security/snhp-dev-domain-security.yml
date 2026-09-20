@@ -1,0 +1,60 @@
+generated: '2026-09-19'
+method: probed
+source: live DNS/TLS/HTTP probes of apis.yml + OpenAPI hosts
+hosts:
+- host: snhp.dev
+  https: true
+  tls_version: TLSv1.3
+  cert_expires: Nov 27 12:01:56 2026 GMT
+  hsts: true
+  hsts_max_age: 31536000
+  hsts_include_subdomains: true
+  hsts_note: 'strict-transport-security: max-age=31536000; includeSubDomains observed on every GET/POST response
+    from snhp.dev on 2026-09-19 (the scripts HEAD did not record it)'
+- host: arena.snhp.dev
+  https: true
+  tls_version: TLSv1.3
+  cert_expires: Dec  6 11:42:27 2026 GMT
+  hsts: false
+  hsts_note: no strict-transport-security header observed on arena.snhp.dev responses
+- host: api.snhp.dev
+  https: true
+  tls_version: TLSv1.3
+  hsts: true
+  hsts_max_age: 31536000
+  hsts_include_subdomains: true
+  note: Alias of the same Fly.io application as snhp.dev; TLS 1.3 + HSTS observed on live responses 2026-09-19 (added
+    from the curl observations, not the script)
+- host: www.snhp.dev
+  https: true
+  tls_version: TLSv1.3
+  hsts: true
+  hsts_max_age: 31536000
+  hsts_include_subdomains: true
+  note: Alias of the same Fly.io application as snhp.dev; TLS 1.3 + HSTS observed on live responses 2026-09-19 (added
+    from the curl observations, not the script)
+- host: snhp.fly.dev
+  https: true
+  tls_version: TLSv1.3
+  hsts: true
+  hsts_max_age: 31536000
+  hsts_include_subdomains: true
+  note: Alias of the same Fly.io application as snhp.dev; TLS 1.3 + HSTS observed on live responses 2026-09-19 (added
+    from the curl observations, not the script)
+domains:
+- domain: snhp.dev
+  dnssec: false
+  caa: []
+  spf: false
+  dmarc: false
+security_headers_observed:
+  host: snhp.dev
+  headers:
+  - 'strict-transport-security: max-age=31536000; includeSubDomains'
+  - 'x-content-type-options: nosniff'
+  - 'x-frame-options: DENY'
+  - 'referrer-policy: no-referrer'
+  - 'content-security-policy: default-src ''none''; frame-ancestors ''none''  (API responses); default-src ''self''
+    ... (HTML pages)'
+email_note: No SPF and no DMARC on snhp.dev; the operator contact is a gmail.com address, so no mail is expected
+  to originate from the domain — but nothing prevents spoofing it either.

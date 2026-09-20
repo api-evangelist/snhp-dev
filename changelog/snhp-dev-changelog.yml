@@ -1,0 +1,74 @@
+generated: '2026-09-19'
+method: searched
+source: https://raw.githubusercontent.com/ryuxik/snhp/main/gametheory/CHANGELOG.md (200, 19,453 bytes, fetched 2026-09-19);
+  rendered at https://github.com/ryuxik/snhp/blob/main/gametheory/CHANGELOG.md
+checked: '2026-09-19'
+summary: 'The only dated changelog is a repository file, gametheory/CHANGELOG.md, with three entries all from 2026-05-01/02.
+  It is an EXPERIMENT and TUNING log rather than an API release log: it records paired LLM-tournament results (lifts,
+  confidence intervals, p-values, dollar cost per run), the magic-number tuning framework, and a variant that was
+  "shipped, reverted, and what we learned". It contains no endpoint additions, no breaking-change notices and no
+  version numbers, and it has not been updated since — although the repository was pushed through 2026-07-26 and
+  the deployment rebuilt 2026-09-16. The site does not serve it (/CHANGELOG.md 404) even though llms.txt says "See
+  CHANGELOG.md" twice. Release tags exist on GitHub (v0.1.0 2026-06-30, v0.2.0 2026-07-10) without release notes.'
+scheme: dated headings (YYYY-MM-DD — title); no semver in the log
+current_version: 0.1.0 (product) / 0.2.0 (PyPI) — neither appears in the changelog
+window: complete file (3 entries)
+entries:
+- date: '2026-05-02'
+  title: Hassabis experiment portfolio (5 experiments, $5.88 total)
+  kind: experiment-log
+  breaking: false
+  sections:
+  - Experiments + verdicts
+  - Strategic implications
+  - What we deliberately did NOT do
+  highlights_verbatim:
+  - E1 — H3 fresh-seed replication ($0.69)
+  - E2 — H1 power-up at N=50 ($3.01)
+  - E3 — Sim-only commit-reveal sweep ($0.00)
+  - E4 — Oracle-reveal LLM-loop validation ($1.48)
+  - E5 — Stuck-deal stratification ($0.00, re-mining existing data)
+  - E6 — Cross-vendor benchmark ($0.73, post-YC v5 review)
+- date: '2026-05-01'
+  title: Magic-number framework + Phase 1-2 tuning (in progress)
+  kind: tuning-framework
+  breaking: false
+  sections:
+  - Context
+  - What shipped
+  - Methodology lessons
+  - Methodology lessons
+  highlights_verbatim:
+  - '`gametheory/negotiation/_config.py`'
+  - 20 were tagged `magic-tunable`
+  - Env-var override mechanism
+  - '`gametheory/negotiation/_sim.py`'
+  - Sim validation gate
+  - Phase 1.5 sensitivity analysis
+- date: '2026-05-01'
+  title: 'peer_cs variant: shipped, reverted, and what we learned'
+  kind: experiment-log
+  breaking: false
+  sections:
+  - Summary
+  - Timeline
+  - What was reverted
+  - What was preserved
+  - Lessons for future tuning work
+  - Live N=20 numbers (preserved for honest framing)
+  highlights_verbatim:
+  - Hypothesis
+  - v1 (Optuna-tuned)
+  - +0.297, 95% CI [+0.279, +0.315], Wilcoxon p<1e-11.
+  - N=20 LLM validation at n_steps=6 with v1
+  - p=0.13 — not stat-sig.
+  - maximized opponent utility subject to self-target
+releases_without_notes:
+- tag: v0.2.0
+  date: '2026-07-10'
+  notes: none
+- tag: v0.1.0
+  date: '2026-06-30'
+  notes: none
+see:
+  lifecycle: lifecycle/snhp-dev-lifecycle.yml

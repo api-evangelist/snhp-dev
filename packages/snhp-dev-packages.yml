@@ -1,0 +1,93 @@
+generated: '2026-09-19'
+method: searched
+source: >-
+  Registry metadata read unauthenticated on 2026-09-19 — pypi.org/pypi/snhp/json,
+  registry.npmjs.org/snhp and /@snhp%2fmcp (both 404), api.github.com/repos/ryuxik/snhp (+
+  releases, tags, tree) — plus the provider's README, pyproject.toml, PRICING.md,
+  registry.modelcontextprotocol.io and smithery.ai.
+checked: '2026-09-19'
+summary:
+  first_party_package_count: 1
+  official_client_sdk_count: 1
+  third_party_package_count: 0
+  note: >-
+    ONE first-party package, on PyPI: `snhp` 0.2.0 (Apache-2.0, published 2026-07-10). It is three
+    things in one distribution — the negotiation engine as an importable Python library
+    (gametheory.negotiation.plain_terms.negotiate_turn, .bundle.negotiate_bundle — the same math the
+    hosted API runs, callable with no network), the stdio MCP server (`uvx snhp` / `snhp` /
+    `gametheory-mcp` console scripts) and the FastAPI server itself (extras `prod`, `arena`). It is
+    NOT an HTTP client for the hosted API: PRICING.md says "No SDK is sold or needed — agents
+    integrate via MCP and the OpenAPI spec". SDKs is emitted because the library is a genuine
+    first-party programmatic surface for the product; a consumer should read it as "the engine,
+    locally" rather than "a client for snhp.dev". Nothing on npm, Maven, NuGet, RubyGems, Packagist,
+    crates.io or pkg.go.dev.
+  currency_note: >-
+    The PyPI release (0.2.0, 2026-07-10) is OLDER than the running service: the GitHub default
+    branch was last pushed 2026-07-26, the official MCP registry entry was published 2026-07-23 at
+    version 0.4.0, and the live server's Fly build stamp reads 2026-09-16. The hosted MCP door
+    lists 15 core tools and the docs describe a "43-tool" then "54-tool" pro surface; whether the
+    0.2.0 stdio package exposes the same tool set as the live server was not verified (the
+    pipeline does not execute packages). A caller who wants the current surface should use the
+    remote endpoint.
+packages:
+  - language: python
+    registry: pypi
+    name: snhp
+    url: https://pypi.org/project/snhp/
+    install: pip install snhp
+    install_zero: uvx snhp
+    official: true
+    kind: [library, mcp-server-stdio, api-server]
+    version: 0.2.0
+    published: '2026-07-10'
+    first_release: {version: 0.1.0, published: '2026-06-30'}
+    release_count: 2
+    license: Apache-2.0
+    requires_python: '>=3.10'
+    author: gametheory.dev
+    summary: 'Math-optimal negotiation moves for AI agents, in plain dollars (single + multi-issue).'
+    console_scripts: [snhp, gametheory-mcp]
+    project_urls_note: >-
+      PyPI project_urls point at https://gametheory.dev and https://docs.gametheory.dev/llms.txt —
+      NEITHER resolves (curl exit 6, no DNS). The live product is snhp.dev; the package metadata
+      predates the rename and was not updated. Recorded as a stale-pointer finding, not repaired.
+    dependencies_note: 'numpy, scipy, fastapi, uvicorn, pydantic, cryptography, PyJWT, mcp>=1.27, numba. Extras: test, snhp (negmas, litellm, google-genai, optuna, pandas, scikit-learn), prod (stripe, psycopg2, anthropic, python-dotenv), arena (websockets).'
+    source: https://github.com/ryuxik/snhp
+    registry_metadata: https://pypi.org/pypi/snhp/json
+absent:
+  - {registry: npm, names_checked: [snhp, '@snhp/mcp'], status: 404}
+  - {registry: maven, status: not-found}
+  - {registry: nuget, status: not-found}
+  - {registry: rubygems, status: not-found}
+  - {registry: packagist, status: not-found}
+  - {registry: crates.io, status: not-found}
+  - {registry: pkg.go.dev, status: not-found}
+github:
+  found: true
+  kind: personal-account
+  url: https://github.com/ryuxik
+  login: ryuxik
+  account_name: Santiago Munoz
+  public_repos: 19
+  repository:
+    name: snhp
+    url: https://github.com/ryuxik/snhp
+    license: Apache-2.0
+    created: '2026-04-28'
+    pushed: '2026-07-26'
+    releases: [{tag: v0.2.0, published: '2026-07-10'}, {tag: v0.1.0, published: '2026-06-30'}]
+    stars: 0
+    forks: 0
+    tree_paths: 1336
+    notable_files: [README.md, PRICING.md, MANIFESTO.md, ARCHITECTURE.md, DEPLOY.md, NOTICE, server.json, smithery.yaml, glama.json, gametheory/CHANGELOG.md, gametheory/server/A2A_FLOW.md, arena/gauntlet/PREREG-pool.md, vend/mpp_client.py, nx/SPEC.md]
+    note: >-
+      The repository is the whole company: engine, hosted server, MCP servers, the arena, research
+      write-ups with pre-registrations, and the pricing document (which is NOT served on the site —
+      https://snhp.dev/PRICING.md answers 404 although /v1/catalog advertises it as pricing_url).
+      No CHANGELOG.md at the root; the dated changelog is gametheory/CHANGELOG.md. No SECURITY.md,
+      no AGENTS.md, no CLAUDE.md, no .proto, no AsyncAPI.
+mcp_distribution:
+  official_registry: {name: io.github.ryuxik/snhp, version: 0.4.0, remote: 'https://api.snhp.dev/mcp/', published: '2026-07-23'}
+  smithery: {url: 'https://smithery.ai/servers/ryuxik/snhp', transport: stdio, command: 'uvx snhp'}
+  glama: {maintainers: [ryuxik]}
+  see: mcp/snhp-dev-mcp.yml

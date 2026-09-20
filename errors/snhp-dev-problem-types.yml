@@ -1,0 +1,123 @@
+generated: '2026-09-19'
+method: derived
+source: openapi/snhp-dev-openapi.yml 4xx/5xx responses, enriched from https://snhp.dev/llms.txt (429, uncharged-failure
+  envelope, GDPR endpoints), GET /v1/store/catalog (admission / insufficient_balance) and live unauthenticated responses
+  observed on 2026-09-19 (404, 405, 422 missing-credential, 402 problem+json).
+format: fastapi-detail (partial rfc9457)
+summary: 'The spec declares only three error codes across 74 operations: 422 HTTPValidationError on 48 operations,
+  400 "Invalid input" on one (sell-side next_offer, empty content), and 402 on one (MPP top-up, empty content).
+  Nothing declares 401, 403, 404, 409, 429 or 5xx, although 404/405 were observed live, 429 is documented in prose
+  with Retry-After, and missing credentials come back as 422 rather than 401. The one RFC 9457 response in the whole
+  surface is the 402 payment challenge, which the spec under-describes. The most agent-relevant error is not an
+  HTTP error at all: a failed PAID call returns HTTP 200 {ok:false, charged:false, reason, code}.'
+problems:
+- status: 422
+  title: Validation Error
+  type: HTTPValidationError
+  media_type: application/json
+  shape: '{"detail": [{"type", "loc": [...], "msg", "input", "ctx"?}]}'
+  declared_on_operations: 48
+  observed:
+  - request: POST /v1/negotiate/turn {}
+    body: '[{"type":"missing","loc":["body","side"],"msg":"Field required","input":{}}, ... walk_away, target]'
+  - request: GET /v1/billing/balance (no key)
+    body: '[{"type":"missing","loc":["header","X-API-Key"],"msg":"Field required","input":null}]'
+    note: a missing credential is a 422, not a 401 — no WWW-Authenticate
+  - request: POST /v1/advice/session (no key)
+    body: '[{"type":"missing","loc":["body","api_key"],"msg":"Field required", ...}]'
+  remediation: Read loc[] to find the field; required fields per operation are in the request schema. For header/api_key
+    locs, supply the gt_* key.
+  source_operation: openapi/snhp-dev-openapi.yml#negotiate_turn_endpoint_v1_negotiate_turn_post
+- status: 400
+  title: Invalid input
+  media_type: unspecified (empty content in spec)
+  declared_on_operations:
+  - negotiation_sell_next_offer_v1_negotiation_sell_next_offer_post
+  remediation: Semantic validation beyond the schema (e.g. reservation outside [0,1], offer histories inconsistent).
+    Body shape not published.
+  source_operation: openapi/snhp-dev-openapi.yml#negotiation_sell_next_offer_v1_negotiation_sell_next_offer_post
+- status: 402
+  title: Payment Required
+  type: https://paymentauth.org/problems/payment-required
+  media_type: application/problem+json
+  rfc9457: true
+  shape: '{"type","title","status":402,"detail":"Payment is required.","challengeId","price_cents","base_cents","fee_cents","counter_fee_pct"}'
+  headers:
+  - 'WWW-Authenticate: Payment id="...", realm="snhp.dev", method="stripe", intent="charge", request="<base64 challenge>",
+    description="SNHP wallet top-up (200c credit): $2.00 + $0.40 (5% + $0.30 counter fee) = $2.40", expires="<ISO>"'
+  - 'Accept-Payment: stripe'
+  declared_on_operations:
+  - mpp_topup_v1_mpp_topup_post
+  observed:
+  - request: POST /v1/mpp/topup {} (no credential)
+    status: 402
+    note: observed live 2026-09-19; this IS the documented MPP flow, not a failure
+  remediation: 'Authorise the challenge with a Stripe Shared Payment Token scoped to this store and retry with Authorization:
+    Payment <credential>; a Payment-Receipt header comes back. Human fallback: POST /v1/billing/checkout_session.'
+  second_402_case: An underfunded wallet on an ANCHOR SKU ($2 session / bundle) also 402s "pointing at top-up options
+    (including the $2 custom minimum)" — GET /v1/store/catalog admission. Shape not observed.
+  source_operation: openapi/snhp-dev-openapi.yml#mpp_topup_v1_mpp_topup_post
+- status: 404
+  title: Not Found
+  media_type: application/json
+  shape: '{"detail":"Not Found"}'
+  declared: false
+  observed:
+  - request: GET /v1/nope
+    status: 404
+  - request: GET /.well-known/snhp-dev-negative-control-7f3ab91c.json
+    status: 404
+  remediation: Router-level; also what an unknown memory ticket looks like from the WRONG owner by design ("A wrong
+    owner is indistinguishable from a missing ticket").
+- status: 405
+  title: Method Not Allowed
+  media_type: application/json
+  shape: '{"detail":"Method Not Allowed"}'
+  declared: false
+  observed:
+  - request: POST https://snhp.dev/ (JSON-RPC)
+    status: 405
+  - request: GET /v1/a2a/open_session
+    status: 405
+- status: 429
+  title: Too Many Requests
+  declared: false
+  documented: true
+  headers:
+  - 'Retry-After: <whole seconds until a token frees up> — "A 429 always carries Retry-After"'
+  limits: 60/min per IP keyless; 600/min per key sent as a HEADER; POST /v1/keys 10/hour per IP; LLM dispute routes
+    40/hour per IP and a $5/day cap ("Past the cap, calls 429").
+  remediation: Sleep Retry-After seconds. To leave the 60/min floor, issue a key (POST /v1/keys) and send it in
+    Authorization or X-API-Key — a key in the body does not raise the limit.
+  source: https://snhp.dev/llms.txt "Cost model"; PRICING.md "Abuse resistance"
+- status: 200
+  title: Uncharged failure (business outcome under a success status)
+  media_type: application/json
+  shape: '{"ok": false, "charged": false, "reason": "<text>", "code": "<slug>"}'
+  declared: false
+  documented: true
+  codes_named_in_docs:
+  - insufficient_balance  (only a ZERO balance is refused on commodity slots)
+  - expired  (memory_load on a past-TTL ticket)
+  - at_rest_key_unavailable  (memory_load when the server-side at-rest key is missing)
+  - 'found: false  (store_request_status on an unknown id)'
+  remediation: Check `ok` on every paid call regardless of HTTP status. charged:false means the wallet did not move
+    — safe to fix the input and retry.
+  source: https://snhp.dev/llms.txt "Wallet, fee & the safety rule"; store_retrieve tool description; GET /v1/store/catalog
+    admission
+gdpr_operations:
+- operation: telemetry_delete_v1_telemetry_delete_delete
+  summary: GDPR Article 17 — delete all telemetry rows for this key
+  response: '{rows_deleted: N}'
+- operation: telemetry_export_v1_telemetry_export_get
+  summary: GDPR Article 15 — export all telemetry rows for this key
+  response: '{rows: [...]}'
+not_declared_anywhere:
+- 401 (missing credential is 422)
+- '403'
+- 409 (no idempotency conflicts because no idempotency keys)
+- 5xx
+see:
+  conventions: conventions/snhp-dev-conventions.yml
+  rate_limits: rate-limits/snhp-dev-rate-limits.yml
+  overlay: 'overlays/snhp-dev-openapi-overlay.yaml  # proposes the 429 and 402 bodies the spec omits'

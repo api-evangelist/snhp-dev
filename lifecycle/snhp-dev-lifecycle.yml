@@ -1,0 +1,81 @@
+generated: '2026-09-19'
+method: searched
+source: >-
+  https://snhp.dev/v1/catalog (sla block, per-tool stability), the repository PRICING.md ("Service
+  level (honest posture)") and gametheory/CHANGELOG.md, https://snhp.dev/health, the MCP pro door's
+  legacy tool names, https://registry.modelcontextprotocol.io/v0/servers?search=snhp, PyPI and
+  GitHub release metadata, and live probes of status/changelog paths on 2026-09-19.
+checked: '2026-09-19'
+summary: >-
+  A pre-1.0 single-deployment service that says so in machine-readable form: GET /v1/catalog
+  returns sla {level: best-effort, uptime_guarantee: null, self_hostable: true} and the text "No
+  uptime SLA today (single deployment) — best-effort. The core math is deterministic and
+  self-hostable, so you can depend on no one. A real 99.9%-with-credits commitment comes only with
+  redundant infra." There is no status page (status.snhp.dev does not resolve; /status 404s), no
+  deprecation policy and no Sunset/Deprecation headers — but there IS a de facto deprecation
+  practice: 12 legacy gt_* MCP tool names are kept alive on the /mcp/pro/ door, each self-described
+  as "Alias of <new name>", with no removal date. The dated changelog lives in the repository
+  (gametheory/CHANGELOG.md, last entry 2026-05-02) and is not served on the site; a ChangeLog
+  pointer to the GitHub file is emitted. No StatusPage or Deprecation pointer is emitted.
+versioning:
+  scheme: path-prefix-plus-product-version
+  api_path: /v1/
+  current: v1
+  product_version: 0.1.0
+  product_version_sources:
+    - 'openapi info.version: 0.1.0'
+    - '/health: {"status":"ok","version":"0.1.0","first_strike_key_source":"env"}'
+    - 'agent card version: 0.1.0'
+    - 'MCP server card serverInfo.version: 0.1.0'
+    - '/v1/catalog version: 0.1.0'
+  other_version_numbers:
+    - {surface: 'PyPI snhp', version: 0.2.0, date: '2026-07-10'}
+    - {surface: 'official MCP registry io.github.ryuxik/snhp', version: 0.4.0, date: '2026-07-23'}
+    - {surface: 'MCP initialize serverInfo.version', version: 1.28.1, note: 'the Python mcp SDK version, not the product'}
+    - {surface: 'Fly.io server header', value: 'Fly/57f2b87df (2026-09-16)', note: 'the platform build, but it shows the deployment was touched in September while the repo default branch was last pushed 2026-07-26'}
+  version_note: >-
+    Four different version numbers describe one product (0.1.0 / 0.2.0 / 0.4.0 / 1.28.1). Below
+    1.0 on every product surface — an explicit pre-stable signal.
+  per_operation_stability: '/v1/catalog marks tools stability: stable (gt.negotiate.turn) or beta (gt.negotiate.bundle) — the only maturity signal below the product level.'
+  breaking_change_policy: not-published
+  pinning: not-applicable
+deprecation:
+  policy_published: false
+  sunset_header: false
+  deprecation_header: false
+  deprecated_operations_in_spec: 0
+  de_facto_practice: >-
+    Renamed MCP tools survive as aliases on the pro door: gt_negotiate_turn, gt_negotiate_bundle,
+    gt_auction_optimal_bid, gt_auction_optimal_reserve, gt_mechanism_posted_price_optimal,
+    gt_mechanism_gale_shapley, store_park, store_retrieve, nextmove_open, nextmove_advise,
+    nextmove_bundle, nextmove_close — 12 tools whose descriptions open "Alias of `<name>`". The
+    REST side kept both /v1/store/park and /v1/memory/save (same handler). No removal date, no
+    deprecation marker in tools/list, no `deprecated: true` in the OpenAPI.
+  llms_txt_note: 'llms.txt also carries a superseded claim it corrects in place ("Earlier-cited +13% / +0.186 ... revised on 2026-05-01 after our own audit") and a "coming Q3 2026" reputation-scoring spec at api.snhp.dev/reputation_scoring_spec.html — forward-looking, not a deprecation.'
+sla:
+  published: true
+  level: best-effort
+  uptime_target: null
+  uptime_guarantee: null
+  credits: none
+  self_hostable: true
+  verbatim: 'No uptime SLA today (single deployment) — best-effort. The core math is deterministic and self-hostable, so you can depend on no one. A real 99.9%-with-credits commitment comes only with redundant infra.'
+  source: https://snhp.dev/v1/catalog
+  corroboration: 'PRICING.md "Service level (honest posture)": "Best-effort. No uptime SLA today. The hosted service runs on a single deployment; publishing a 99.9% we can''t fail over to would be dishonest." Moves to 99.9%-with-credits "only once the service is on redundant infrastructure".'
+status_page: null
+status_page_probes:
+  - {url: 'https://status.snhp.dev/', status: 0, note: 'no DNS'}
+  - {url: 'https://snhp.dev/status', status: 404}
+  - {url: 'https://snhp.dev/health', status: 200, note: 'a liveness JSON, not a status page'}
+changelog:
+  url: https://github.com/ryuxik/snhp/blob/main/gametheory/CHANGELOG.md
+  served_on_site: false
+  site_probes: [{url: 'https://snhp.dev/CHANGELOG.md', status: 404}, {url: 'https://snhp.dev/changelog', status: 404}]
+  latest_entry: '2026-05-02'
+  see: changelog/snhp-dev-changelog.yml
+support_window: not-published
+deprecated_operations: []
+key_material_lifecycle:
+  first_strike_key: 'server-side, "first_strike_key_source": "env" in /health — a persistent key is "enforced in prod so attestations/mandates don''t silently break across restarts" (PRICING.md)'
+  notary_key: 'GET /v1/store/notary_pubkey reports key_source: env; the catalog warns that key_source "ephemeral" would prove only signer-consistency within one server lifetime'
+  api_keys: 'shown once; rotate invalidates immediately; see authentication/'
