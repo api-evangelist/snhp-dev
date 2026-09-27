@@ -1,0 +1,437 @@
+openapi: 3.2.0
+info:
+  title: Snhp Dev Offer API
+  version: 0.1.0
+  description: 'Operations tagged offer across 2 of this provider''s published API definitions: snhp-dev-openapi.json, snhp-dev-openapi.yml. Each path carries the servers of the definition it was published in.'
+servers:
+- url: https://snhp.dev
+  description: Primary host (also served identically on https://api.snhp.dev, https://www.snhp.dev and https://snhp.fly.dev — the served document declares no servers[]; this block was added by API Evangelist from the provider's llms.txt and agents.json http_base)
+tags:
+- name: Offer
+  description: 'General offer-graph engine: compile / profile / quote a JSON menu spec (discount-only, never above list)'
+paths:
+  /v1/offer/compile:
+    post:
+      tags:
+      - Offer
+      summary: Compile a JSON menu spec into an offer graph (summary)
+      description: 'Body: the declarative menu spec itself (dims of kind choice / addon / preference / fulfillment / quantity, each with typed options, an optional deps graph, and a cost stack of const / salvage_on_expiry / scarcity_shadow / batch_economies). Returns the compiled graph summary — dims, options, cost stack, and how many dependency-valid configurations the engine will search. Free, stateless, nothing is stored. Malformed or oversized specs get a 422 with a plain-English reason.'
+      operationId: offer_compile_v1_offer_compile_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MenuSpec'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/offer/profile:
+    post:
+      tags:
+      - Offer
+      summary: 'Profile a menu: FREE vs LEVER per dimension (the divergence profiler)'
+      description: 'The signature endpoint. Give it {spec, state?} and every dimension is classified by probing the cost model: FREE (zero cost gradient — a costless customization the buyer just gets their favorite of, never a price lever) or LEVER (changing the option moves the shop''s effective cost — a real negotiation surface). Each verdict carries the probed dollar spread and a one-line why. Verdicts are properties of the menu''s economics, not of any buyer.'
+      operationId: offer_profile_v1_offer_profile_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/offer/quote:
+    post:
+      tags:
+      - Offer
+      summary: Quote a buyer on a menu — Nash split, discount-only (never above list)
+      description: 'Give it {spec, state?, buyer, config?, opts?} and get the Quote receipt: price, listv, save, feasible, why. The engine searches every valid configuration (or prices the pinned `config`), anchors the disagreement on the buyer''s best full-price menu order, and picks the Nash split of the created surplus. HARD GUARANTEE: discount-only — the price is never above the menu''s list value (`never_above_list: true`, enforced in code). Quotes are advisory engine output on a caller-supplied menu, not a binding offer (`advisory: true`). The response also carries an `attestation`: a signed, replayable NotaryReceipt proving the quote was discount-only and stamping the report-independence regime (b) — verify it offline with GET /v1/notary/key (d=false: v1 has no outside-option attestation).'
+      operationId: offer_quote_v1_offer_quote_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuoteRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+components:
+  schemas:
+    MenuSpec:
+      properties:
+        name:
+          type: string
+          maxLength: 120
+          title: Name
+          default: ''
+        dims:
+          items:
+            $ref: '#/components/schemas/DimSpec'
+          type: array
+          maxItems: 8
+          minItems: 1
+          title: Dims
+        deps:
+          $ref: '#/components/schemas/DepsSpec'
+        cost:
+          items:
+            anyOf:
+            - type: string
+            - additionalProperties: true
+              type: object
+          type: array
+          maxItems: 8
+          title: Cost
+      additionalProperties: false
+      type: object
+      required:
+      - dims
+      title: MenuSpec
+      description: 'core.api.build_graph''s declarative spec, validated for hosting.
+
+
+        DUAL-ACCEPT: a body carrying `items` is the FRIENDLY pasted menu (what
+
+        arena/web/yourmenu.js accepts) and is compiled to the raw `dims` spec via
+
+        menu_spec.friendly_to_dims before the hosting checks below run — so the
+
+        hosted engine takes the exact JSON an agent reads off that page. A body
+
+        carrying `dims` is the native spec and passes through untouched.'
+    BuyerSpec:
+      properties:
+        values:
+          additionalProperties:
+            additionalProperties:
+              type: number
+            type: object
+          type: object
+          title: Values
+          description: dim_id -> option_id -> per-unit dollar value
+        qty_decay:
+          type: number
+          maximum: 1.0
+          minimum: 0.0
+          title: Qty Decay
+          description: each extra unit is worth this fraction of the previous
+          default: 0.15
+        outside:
+          type: number
+          maximum: 1000000000.0
+          minimum: 0.0
+          title: Outside
+          description: the buyer's outside-option surplus in dollars
+          default: 0.0
+        balk:
+          type: number
+          maximum: 1.0
+          minimum: 0.0
+          title: Balk
+          description: probability a walk-in is turned away by the queue
+          default: 0.0
+        defer:
+          additionalProperties:
+            type: number
+          type: object
+          title: Defer
+          description: slot_ticks -> dollar cost of waiting for that slot
+      additionalProperties: false
+      type: object
+      title: BuyerSpec
+      description: 'A separable buyer (core/engine.SeparableBuyer): per-option dollar
+
+        values, a quantity-decay ladder, and scalar outside/balk/defer reports.'
+    DepsSpec:
+      properties:
+        valid_on:
+          additionalProperties:
+            items:
+              type: string
+            type: array
+          type: object
+          title: Valid On
+        requires:
+          additionalProperties:
+            items:
+              type: string
+            type: array
+          type: object
+          title: Requires
+        excludes:
+          additionalProperties:
+            items:
+              type: string
+            type: array
+          type: object
+          title: Excludes
+      additionalProperties: false
+      type: object
+      title: DepsSpec
+    DimSpec:
+      properties:
+        id:
+          type: string
+          maxLength: 64
+          minLength: 1
+          title: Id
+        kind:
+          type: string
+          title: Kind
+        options:
+          items:
+            $ref: '#/components/schemas/OptionSpec'
+          type: array
+          maxItems: 12
+          title: Options
+        qty_cap:
+          type: integer
+          maximum: 12.0
+          minimum: 1.0
+          title: Qty Cap
+          default: 1
+        negotiable:
+          anyOf:
+          - type: string
+            enum:
+            - free
+            - lever
+            - auto
+          - type: 'null'
+          title: Negotiable
+      additionalProperties: false
+      type: object
+      required:
+      - id
+      - kind
+      title: DimSpec
+    ProfileRequest:
+      properties:
+        spec:
+          $ref: '#/components/schemas/MenuSpec'
+        state:
+          anyOf:
+          - $ref: '#/components/schemas/StateSpec'
+          - type: 'null'
+      additionalProperties: false
+      type: object
+      required:
+      - spec
+      title: ProfileRequest
+    QuoteRequest:
+      properties:
+        spec:
+          $ref: '#/components/schemas/MenuSpec'
+        state:
+          anyOf:
+          - $ref: '#/components/schemas/StateSpec'
+          - type: 'null'
+        buyer:
+          $ref: '#/components/schemas/BuyerSpec'
+        config:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Config
+          description: 'pin dims: dim_id -> option id | [option ids] (addon) | int (quantity). Omit to search every valid cart.'
+        opts:
+          $ref: '#/components/schemas/QuoteOptsSpec'
+      additionalProperties: false
+      type: object
+      required:
+      - spec
+      - buyer
+      title: QuoteRequest
+    QuoteOptsSpec:
+      properties:
+        quote_lookers:
+          type: boolean
+          title: Quote Lookers
+          description: False = refuse buyers who'd never pay list (IC floor)
+          default: true
+        min_price_frac:
+          type: number
+          maximum: 1.0
+          minimum: 0.0
+          title: Min Price Frac
+          description: never quote below this fraction of list
+          default: 0.0
+        qty_appetite:
+          type: boolean
+          title: Qty Appetite
+          description: don't upsell a unit the buyer values below its cost
+          default: false
+        seller_weight:
+          type: number
+          maximum: 1.0
+          minimum: 0.0
+          title: Seller Weight
+          description: 0.5 = symmetric Nash; →1 tilts surplus to the seller
+          default: 0.5
+      additionalProperties: false
+      type: object
+      title: QuoteOptsSpec
+      description: The hosted subset of core/engine.QuoteOpts.
+    OptionSpec:
+      properties:
+        id:
+          type: string
+          maxLength: 64
+          minLength: 1
+          title: Id
+        label:
+          type: string
+          maxLength: 120
+          title: Label
+          default: ''
+        price_delta:
+          type: number
+          maximum: 1000000000.0
+          minimum: 0.0
+          title: Price Delta
+          description: This option's contribution to the cart's LIST price
+          default: 0.0
+        unit_cost:
+          type: number
+          maximum: 1000000000.0
+          minimum: 0.0
+          title: Unit Cost
+          default: 0.0
+        salvage:
+          type: number
+          maximum: 1000000000.0
+          minimum: 0.0
+          title: Salvage
+          default: 0.0
+        perishable:
+          type: boolean
+          title: Perishable
+          default: false
+        stock_limited:
+          type: boolean
+          title: Stock Limited
+          default: false
+        immediate:
+          type: boolean
+          title: Immediate
+          default: true
+        slot_ticks:
+          type: integer
+          maximum: 10000.0
+          minimum: 0.0
+          title: Slot Ticks
+          default: 0
+      additionalProperties: false
+      type: object
+      required:
+      - id
+      title: OptionSpec
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    StateSpec:
+      properties:
+        tick:
+          type: integer
+          minimum: 0.0
+          title: Tick
+          default: 0
+        inventory:
+          additionalProperties:
+            type: number
+          type: object
+          title: Inventory
+          description: option_id -> units on hand (finite stock)
+        capacity:
+          additionalProperties:
+            type: number
+          type: object
+          title: Capacity
+          description: slot_ticks -> units a deferred slot can still absorb
+        expiring:
+          items:
+            type: string
+          type: array
+          maxItems: 128
+          title: Expiring
+          description: option ids currently priced at salvage (batch expiring)
+        expected_demand:
+          additionalProperties:
+            type: number
+          type: object
+          title: Expected Demand
+          description: option_id -> expected rest-of-horizon list-price demand
+      additionalProperties: false
+      type: object
+      title: StateSpec
+      description: 'The shop moment the cost model reads (core/state.ShopState). All
+
+        fields optional — an omitted state is a neutral shop (no inventory
+
+        signals, nothing expiring, unconstrained capacity).'
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+x-refined-from:
+- snhp-dev-openapi.json
+- snhp-dev-openapi.yml

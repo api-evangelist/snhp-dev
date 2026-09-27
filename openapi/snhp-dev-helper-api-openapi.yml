@@ -1,0 +1,205 @@
+openapi: 3.2.0
+info:
+  title: Snhp Dev Helper API
+  version: 0.1.0
+  description: 'Operations tagged helper across 2 of this provider''s published API definitions: snhp-dev-openapi.json, snhp-dev-openapi.yml. Each path carries the servers of the definition it was published in.'
+servers:
+- url: https://snhp.dev
+  description: Primary host (also served identically on https://api.snhp.dev, https://www.snhp.dev and https://snhp.fly.dev — the served document declares no servers[]; this block was added by API Evangelist from the provider's llms.txt and agents.json http_base)
+tags:
+- name: Helper
+paths:
+  /v1/helper/situations:
+    get:
+      tags:
+      - Helper
+      summary: Situations the helper can think about
+      operationId: helper_situations_v1_helper_situations_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /v1/helper/ask:
+    post:
+      tags:
+      - Helper
+      summary: Describe a situation, get the questions that matter and an answer
+      description: 'Free-text in, a structured read plus a deterministic answer out.
+
+
+        Three regions come back: `reflection` (how we read your situation,
+
+        every field tagged with where it came from), `questions` (at most
+
+        three, each one chosen because the answer would change the advice),
+
+        and `answer` (the fixed output contract, once there''s enough to say
+
+        something).'
+      operationId: helper_ask_v1_helper_ask_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/_HelperAskRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/helper/privacy:
+    get:
+      tags:
+      - Helper
+      summary: Exactly what the helper keeps, and what it never keeps
+      description: 'Served from the same module that does the redaction, so the promise
+
+        and the code cannot quietly diverge.'
+      operationId: helper_privacy_v1_helper_privacy_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /v1/helper/outcome:
+    post:
+      tags:
+      - Helper
+      summary: Tell us what actually happened (anonymous)
+      description: 'The question nobody has measured.
+
+
+        `rent-no-source.md` looked for what landlords actually concede and
+
+        found a blank — the largest renter survey in the country never asks
+
+        whether you negotiated. This is the smallest honest way to start
+
+        filling it: a closed vocabulary, a band, and a token that joins to a
+
+        bucketed row and to nothing else.'
+      operationId: helper_outcome_v1_helper_outcome_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/_HelperOutcomeRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+components:
+  schemas:
+    _HelperOutcomeRequest:
+      properties:
+        receipt:
+          type: string
+          maxLength: 64
+          title: Receipt
+          description: The token returned with an answer.
+        outcome:
+          type: string
+          maxLength: 32
+          title: Outcome
+          description: What the landlord actually did.
+        amount:
+          anyOf:
+          - type: integer
+            maximum: 1000000.0
+            minimum: 0.0
+          - type: 'null'
+          title: Amount
+          description: Roughly how much, if money changed hands. Stored as a band.
+      type: object
+      required:
+      - receipt
+      - outcome
+      title: _HelperOutcomeRequest
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    _HelperAskRequest:
+      properties:
+        text:
+          anyOf:
+          - type: string
+            maxLength: 4000
+          - type: 'null'
+          title: Text
+          description: What's going on, in your own words. Optional.
+        situation_key:
+          anyOf:
+          - type: string
+            maxLength: 64
+          - type: 'null'
+          title: Situation Key
+          description: Skip classification and name the situation.
+        values:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Values
+          description: Fields the person has confirmed or corrected. These always beat anything read from their text. At most 40 entries.
+        no_telemetry:
+          type: boolean
+          title: No Telemetry
+          description: Opt out of the anonymous record for this request. Honoured before anything is built, not before it is written.
+          default: false
+      type: object
+      title: _HelperAskRequest
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+x-refined-from:
+- snhp-dev-openapi.json
+- snhp-dev-openapi.yml

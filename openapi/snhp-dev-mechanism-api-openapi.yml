@@ -1,0 +1,421 @@
+openapi: 3.2.0
+info:
+  title: Snhp Dev Mechanism API
+  version: 0.1.0
+  description: 'Operations tagged mechanism across 2 of this provider''s published API definitions: snhp-dev-openapi.json, snhp-dev-openapi.yml. Each path carries the servers of the definition it was published in.'
+servers:
+- url: https://snhp.dev
+  description: Primary host (also served identically on https://api.snhp.dev, https://www.snhp.dev and https://snhp.fly.dev — the served document declares no servers[]; this block was added by API Evangelist from the provider's llms.txt and agents.json http_base)
+tags:
+- name: mechanism
+  description: 'Tier 3: marketplace operator primitives'
+paths:
+  /v1/mechanism/gale_shapley:
+    post:
+      tags:
+      - mechanism
+      summary: Stable matching via deferred acceptance
+      description: Classic Gale-Shapley. Proposers iterate through their preference lists; each receiver tentatively holds the best offer it has seen. Returns a proposer-optimal stable matching plus a (should-be-empty) list of blocking pairs as a sanity check. Capacities supported for school-choice variants.
+      operationId: mechanism_gale_shapley_v1_mechanism_gale_shapley_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GaleShapleyRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GaleShapleyResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/mechanism/optimal_auction_design:
+    post:
+      tags:
+      - mechanism
+      summary: Myerson revenue-optimal auction (asymmetric IPV)
+      description: 'Per-bidder Myerson reserves. Allocation rule: argmax virtual value, subject to clearing the seller''s valuation. Under symmetric IPV this collapses to second-price-with-reserve and matches the Tier 2 `optimal_reserve` answer.'
+      operationId: mechanism_optimal_auction_design_v1_mechanism_optimal_auction_design_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OptimalAuctionDesignRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OptimalAuctionDesignResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/mechanism/posted_price_optimal:
+    post:
+      tags:
+      - mechanism
+      summary: Gallego-van Ryzin posted-price (static + dynamic schedule)
+      description: Single-product dynamic pricing. Returns the static-price upper bound, a Monte Carlo revenue estimate, and a dynamic price schedule from the backward DP.
+      operationId: mechanism_posted_price_optimal_v1_mechanism_posted_price_optimal_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostedPriceRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostedPriceResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+components:
+  schemas:
+    OptimalAuctionDesignResponse:
+      properties:
+        mechanism:
+          type: string
+          title: Mechanism
+        reserve_prices:
+          additionalProperties: true
+          type: object
+          title: Reserve Prices
+        expected_revenue:
+          type: number
+          title: Expected Revenue
+        expected_welfare:
+          type: number
+          title: Expected Welfare
+        ironing_required:
+          type: boolean
+          title: Ironing Required
+        rationale:
+          type: string
+          title: Rationale
+      type: object
+      required:
+      - mechanism
+      - reserve_prices
+      - expected_revenue
+      - expected_welfare
+      - ironing_required
+      - rationale
+      title: OptimalAuctionDesignResponse
+    GaleShapleyResponse:
+      properties:
+        matching:
+          additionalProperties: true
+          type: object
+          title: Matching
+        unmatched_proposers:
+          items:
+            type: string
+          type: array
+          title: Unmatched Proposers
+        blocking_pairs:
+          items:
+            items:
+              type: string
+            type: array
+          type: array
+          title: Blocking Pairs
+        n_proposals:
+          type: integer
+          title: N Proposals
+      type: object
+      required:
+      - matching
+      - unmatched_proposers
+      - blocking_pairs
+      - n_proposals
+      title: GaleShapleyResponse
+    PostedPriceRequest:
+      properties:
+        share_outcome:
+          type: boolean
+          title: Share Outcome
+          description: 'Opt-in: contribute this (anonymized) call to the prior corpus. Default False. Requires account-level consent set at /v1/keys issuance.'
+          default: false
+        vertical:
+          anyOf:
+          - type: string
+            enum:
+            - ad_inventory
+            - saas_procurement
+            - cloud_compute
+            - freight_logistics
+            - media_licensing
+            - m_and_a_buyside
+            - m_and_a_sellside
+            - real_estate
+            - energy_trading
+            - professional_services
+            - marketplace_b2b
+            - other
+          - type: 'null'
+          title: Vertical
+          description: Self-declared vertical (allowlisted enum). Required when share_outcome=True. Use 'other' if none fit.
+        buyer_arrival_prior:
+          $ref: '#/components/schemas/PriorParams'
+        arrival_rate_per_second:
+          type: number
+          maximum: 100.0
+          exclusiveMinimum: 0.0
+          title: Arrival Rate Per Second
+        inventory:
+          type: integer
+          maximum: 10000.0
+          minimum: 1.0
+          title: Inventory
+        horizon_seconds:
+          type: number
+          maximum: 604800.0
+          exclusiveMinimum: 0.0
+          title: Horizon Seconds
+        n_simulations:
+          type: integer
+          maximum: 20000.0
+          minimum: 100.0
+          title: N Simulations
+          default: 2000
+        seed:
+          type: integer
+          title: Seed
+          default: 42
+      type: object
+      required:
+      - buyer_arrival_prior
+      - arrival_rate_per_second
+      - inventory
+      - horizon_seconds
+      title: PostedPriceRequest
+    OptimalAuctionDesignRequest:
+      properties:
+        share_outcome:
+          type: boolean
+          title: Share Outcome
+          description: 'Opt-in: contribute this (anonymized) call to the prior corpus. Default False. Requires account-level consent set at /v1/keys issuance.'
+          default: false
+        vertical:
+          anyOf:
+          - type: string
+            enum:
+            - ad_inventory
+            - saas_procurement
+            - cloud_compute
+            - freight_logistics
+            - media_licensing
+            - m_and_a_buyside
+            - m_and_a_sellside
+            - real_estate
+            - energy_trading
+            - professional_services
+            - marketplace_b2b
+            - other
+          - type: 'null'
+          title: Vertical
+          description: Self-declared vertical (allowlisted enum). Required when share_outcome=True. Use 'other' if none fit.
+        bidder_priors:
+          items:
+            $ref: '#/components/schemas/PriorParams'
+          type: array
+          maxItems: 50
+          minItems: 1
+          title: Bidder Priors
+        seller_valuation:
+          type: number
+          minimum: 0.0
+          title: Seller Valuation
+        objective:
+          type: string
+          enum:
+          - revenue
+          - welfare
+          title: Objective
+          default: revenue
+        n_simulations:
+          type: integer
+          maximum: 50000.0
+          minimum: 500.0
+          title: N Simulations
+          default: 5000
+        seed:
+          type: integer
+          title: Seed
+          default: 42
+      type: object
+      required:
+      - bidder_priors
+      - seller_valuation
+      title: OptimalAuctionDesignRequest
+    PriorParams:
+      properties:
+        family:
+          type: string
+          title: Family
+          description: lognorm | uniform
+        params:
+          additionalProperties: true
+          type: object
+          title: Params
+      type: object
+      required:
+      - family
+      - params
+      title: PriorParams
+    PostedPriceResponse:
+      properties:
+        static_price:
+          type: number
+          title: Static Price
+        static_expected_revenue:
+          type: number
+          title: Static Expected Revenue
+        static_simulated_revenue:
+          type: number
+          title: Static Simulated Revenue
+        dynamic_schedule:
+          items:
+            additionalProperties: true
+            type: object
+          type: array
+          title: Dynamic Schedule
+        dynamic_value_estimate:
+          type: number
+          title: Dynamic Value Estimate
+        sellthrough_rate:
+          type: number
+          title: Sellthrough Rate
+        rationale:
+          type: string
+          title: Rationale
+      type: object
+      required:
+      - static_price
+      - static_expected_revenue
+      - static_simulated_revenue
+      - dynamic_schedule
+      - dynamic_value_estimate
+      - sellthrough_rate
+      - rationale
+      title: PostedPriceResponse
+    GaleShapleyRequest:
+      properties:
+        proposers:
+          items:
+            $ref: '#/components/schemas/Proposer'
+          type: array
+          maxItems: 1024
+          minItems: 1
+          title: Proposers
+        receivers:
+          items:
+            $ref: '#/components/schemas/Receiver'
+          type: array
+          maxItems: 1024
+          minItems: 1
+          title: Receivers
+      type: object
+      required:
+      - proposers
+      - receivers
+      title: GaleShapleyRequest
+    Receiver:
+      properties:
+        id:
+          type: string
+          maxLength: 128
+          minLength: 1
+          title: Id
+        preferences:
+          items:
+            type: string
+          type: array
+          maxItems: 1024
+          title: Preferences
+          description: Proposer ids ranked most-preferred first
+        capacity:
+          type: integer
+          maximum: 1024.0
+          minimum: 1.0
+          title: Capacity
+          default: 1
+      type: object
+      required:
+      - id
+      title: Receiver
+    Proposer:
+      properties:
+        id:
+          type: string
+          maxLength: 128
+          minLength: 1
+          title: Id
+        preferences:
+          items:
+            type: string
+          type: array
+          maxItems: 1024
+          title: Preferences
+          description: Receiver ids ranked most-preferred first
+      type: object
+      required:
+      - id
+      title: Proposer
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+x-refined-from:
+- snhp-dev-openapi.json
+- snhp-dev-openapi.yml

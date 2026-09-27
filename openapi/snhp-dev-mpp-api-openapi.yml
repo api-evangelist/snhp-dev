@@ -1,0 +1,72 @@
+openapi: 3.2.0
+info:
+  title: Snhp Dev Mpp API
+  version: 0.1.0
+  description: 'Operations tagged mpp across 2 of this provider''s published API definitions: snhp-dev-openapi.json, snhp-dev-openapi.yml. Each path carries the servers of the definition it was published in.'
+servers:
+- url: https://snhp.dev
+  description: Primary host (also served identically on https://api.snhp.dev, https://www.snhp.dev and https://snhp.fly.dev — the served document declares no servers[]; this block was added by API Evangelist from the provider's llms.txt and agents.json http_base)
+tags:
+- name: mpp
+paths:
+  /v1/mpp/topup:
+    post:
+      tags:
+      - mpp
+      summary: Mpp Topup
+      description: 'MPP-framed wallet top-up: pay $2.00 + the counter fee (5% + 30¢) = $2.40
+
+        via SPT and we credit $2.00 to the wallet named by `api_key` in the body. This
+
+        is the SECOND rail beside the prepaid wallet — MPP settlement that FUNDS the
+
+        wallet (contrast the per-call resource above, which funds nothing). Same
+
+        counter fee, same settlement plumbing as billing.agentic_topup, but MPP-shaped
+
+        (402 challenge).'
+      operationId: mpp_topup_v1_mpp_topup_post
+      requestBody:
+        content:
+          application/json:
+            example:
+              api_key: gt_your_key_here
+        required: true
+      responses:
+        '200':
+          description: Payment accepted; wallet credited, Payment-Receipt returned.
+          content:
+            application/json:
+              schema: {}
+        '402':
+          description: 'Payment required; signed WWW-Authenticate: Payment challenge.'
+      x-payment-info:
+        amount: '240'
+        currency: usd
+        method: stripe
+        intent: charge
+        description: 'SNHP wallet top-up (200c credit): $2.00 + $0.40 (5% + $0.30 counter fee) = $2.40'
+  /v1/mpp/manifest:
+    get:
+      tags:
+      - mpp
+      summary: Mpp Manifest
+      description: 'The acceptance manifest: everything an agent''s payment tooling needs to pay
+
+        this store over MPP with a Shared Payment Token, WITHOUT a human. Pure read —
+
+        no charge, no auth. Reuses mpp.paid_resource_frame() for every price (so the
+
+        advertised price is the charged price) and mpp.percall_enabled() /
+
+        mpp.live_ready() so the manifest reflects live server state honestly.'
+      operationId: mpp_manifest_v1_mpp_manifest_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+x-refined-from:
+- snhp-dev-openapi.json
+- snhp-dev-openapi.yml

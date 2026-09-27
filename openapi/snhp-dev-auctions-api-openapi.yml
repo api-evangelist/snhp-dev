@@ -1,0 +1,407 @@
+openapi: 3.2.0
+info:
+  title: Snhp Dev Auctions API
+  version: 0.1.0
+  description: 'Operations tagged auctions across 2 of this provider''s published API definitions: snhp-dev-openapi.json, snhp-dev-openapi.yml. Each path carries the servers of the definition it was published in.'
+servers:
+- url: https://snhp.dev
+  description: Primary host (also served identically on https://api.snhp.dev, https://www.snhp.dev and https://snhp.fly.dev — the served document declares no servers[]; this block was added by API Evangelist from the provider's llms.txt and agents.json http_base)
+tags:
+- name: auctions
+  description: 'Tier 2: single-unit auctions'
+paths:
+  /v1/auction/bidder/optimal_bid:
+    post:
+      tags:
+      - auctions
+      summary: Optimal bid for first-price/Vickrey/English auction
+      operationId: auction_bidder_optimal_bid_v1_auction_bidder_optimal_bid_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OptimalBidRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OptimalBidResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/auction/seller/optimal_reserve:
+    post:
+      tags:
+      - auctions
+      summary: Myerson optimal reserve price
+      operationId: auction_seller_optimal_reserve_v1_auction_seller_optimal_reserve_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OptimalReserveRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OptimalReserveResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/auction/seller/format_recommendation:
+    post:
+      tags:
+      - auctions
+      summary: Recommend an auction format given seller weights
+      operationId: auction_seller_format_recommendation_v1_auction_seller_format_recommendation_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FormatRecRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FormatRecResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/auction/simulate:
+    post:
+      tags:
+      - auctions
+      summary: Monte Carlo auction simulation
+      operationId: auction_simulate_v1_auction_simulate_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SimulateRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimulateResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+components:
+  schemas:
+    FormatRecRequest:
+      properties:
+        bidder_value_prior:
+          $ref: '#/components/schemas/PriorParams'
+        n_bidders:
+          type: integer
+          maximum: 100.0
+          minimum: 1.0
+          title: N Bidders
+        seller_valuation:
+          type: number
+          minimum: 0.0
+          title: Seller Valuation
+        weights:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Weights
+      type: object
+      required:
+      - bidder_value_prior
+      - n_bidders
+      - seller_valuation
+      title: FormatRecRequest
+    SimulateResponse:
+      properties:
+        mean_revenue:
+          type: number
+          title: Mean Revenue
+        ci_95:
+          items:
+            type: number
+          type: array
+          title: Ci 95
+        efficiency:
+          type: number
+          title: Efficiency
+        winner_index_distribution:
+          items:
+            type: number
+          type: array
+          title: Winner Index Distribution
+        n_simulations:
+          type: integer
+          title: N Simulations
+      type: object
+      required:
+      - mean_revenue
+      - ci_95
+      - efficiency
+      - winner_index_distribution
+      - n_simulations
+      title: SimulateResponse
+    PriorParams:
+      properties:
+        family:
+          type: string
+          title: Family
+          description: lognorm | uniform
+        params:
+          additionalProperties: true
+          type: object
+          title: Params
+      type: object
+      required:
+      - family
+      - params
+      title: PriorParams
+    OptimalBidResponse:
+      properties:
+        optimal_bid:
+          type: number
+          title: Optimal Bid
+        expected_surplus:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Expected Surplus
+        win_probability:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Win Probability
+        dominant_strategy:
+          type: boolean
+          title: Dominant Strategy
+        rationale:
+          type: string
+          title: Rationale
+      type: object
+      required:
+      - optimal_bid
+      - expected_surplus
+      - win_probability
+      - dominant_strategy
+      - rationale
+      title: OptimalBidResponse
+    OptimalBidRequest:
+      properties:
+        share_outcome:
+          type: boolean
+          title: Share Outcome
+          description: 'Opt-in: contribute this (anonymized) call to the prior corpus. Default False. Requires account-level consent set at /v1/keys issuance.'
+          default: false
+        vertical:
+          anyOf:
+          - type: string
+            enum:
+            - ad_inventory
+            - saas_procurement
+            - cloud_compute
+            - freight_logistics
+            - media_licensing
+            - m_and_a_buyside
+            - m_and_a_sellside
+            - real_estate
+            - energy_trading
+            - professional_services
+            - marketplace_b2b
+            - other
+          - type: 'null'
+          title: Vertical
+          description: Self-declared vertical (allowlisted enum). Required when share_outcome=True. Use 'other' if none fit.
+        auction_format:
+          type: string
+          title: Auction Format
+          description: first_price | second_price_vickrey | english_ascending
+        my_valuation:
+          type: number
+          exclusiveMinimum: 0.0
+          title: My Valuation
+        n_competing_bidders:
+          type: integer
+          maximum: 100.0
+          minimum: 1.0
+          title: N Competing Bidders
+        competitor_value_prior:
+          $ref: '#/components/schemas/PriorParams'
+        reserve_price:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Reserve Price
+        risk_aversion:
+          type: number
+          maximum: 1.0
+          minimum: 0.1
+          title: Risk Aversion
+          default: 1.0
+      type: object
+      required:
+      - auction_format
+      - my_valuation
+      - n_competing_bidders
+      - competitor_value_prior
+      title: OptimalBidRequest
+    SimulateRequest:
+      properties:
+        auction_format:
+          type: string
+          title: Auction Format
+        bidder_priors:
+          items:
+            $ref: '#/components/schemas/PriorParams'
+          type: array
+          title: Bidder Priors
+        reserve_price:
+          type: number
+          minimum: 0.0
+          title: Reserve Price
+        n_simulations:
+          type: integer
+          maximum: 100000.0
+          minimum: 100.0
+          title: N Simulations
+          default: 10000
+        seed:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Seed
+      type: object
+      required:
+      - auction_format
+      - bidder_priors
+      - reserve_price
+      title: SimulateRequest
+    FormatRecResponse:
+      properties:
+        recommended_format:
+          type: string
+          title: Recommended Format
+        scores:
+          additionalProperties: true
+          type: object
+          title: Scores
+        expected_revenue_by_format:
+          additionalProperties: true
+          type: object
+          title: Expected Revenue By Format
+        rationale:
+          type: string
+          title: Rationale
+      type: object
+      required:
+      - recommended_format
+      - scores
+      - expected_revenue_by_format
+      - rationale
+      title: FormatRecResponse
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    OptimalReserveRequest:
+      properties:
+        bidder_value_prior:
+          $ref: '#/components/schemas/PriorParams'
+        n_bidders:
+          type: integer
+          maximum: 100.0
+          minimum: 1.0
+          title: N Bidders
+        seller_valuation:
+          type: number
+          minimum: 0.0
+          title: Seller Valuation
+      type: object
+      required:
+      - bidder_value_prior
+      - n_bidders
+      - seller_valuation
+      title: OptimalReserveRequest
+    OptimalReserveResponse:
+      properties:
+        reserve_price:
+          type: number
+          title: Reserve Price
+        expected_revenue:
+          type: number
+          title: Expected Revenue
+        expected_revenue_no_reserve:
+          type: number
+          title: Expected Revenue No Reserve
+        expected_efficiency_loss:
+          type: number
+          title: Expected Efficiency Loss
+        rationale:
+          type: string
+          title: Rationale
+      type: object
+      required:
+      - reserve_price
+      - expected_revenue
+      - expected_revenue_no_reserve
+      - expected_efficiency_loss
+      - rationale
+      title: OptimalReserveResponse
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+x-refined-from:
+- snhp-dev-openapi.json
+- snhp-dev-openapi.yml

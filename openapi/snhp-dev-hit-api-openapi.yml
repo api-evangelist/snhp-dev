@@ -1,0 +1,47 @@
+openapi: 3.2.0
+info:
+  title: Snhp Dev Hit API
+  version: 0.1.0
+  description: 'Operations tagged Hit across 2 of this provider''s published API definitions: snhp-dev-arena-openapi.json, snhp-dev-arena-openapi.yml. Each path carries the servers of the definition it was published in.'
+servers:
+- url: https://arena.snhp.dev
+  description: Arena host (the served document declares no servers[]; added by API Evangelist from the fetch host, which the provider's llms.txt names as arena.snhp.dev)
+tags:
+- name: Hit
+paths:
+  /hit:
+    post:
+      summary: Hit
+      operationId: hit_hit_post
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Hit Hit Post
+      tags:
+      - Hit
+  /api/hit:
+    post:
+      summary: Api Hit
+      description: 'Fire-and-forget pageview beacon for statically-served pages (nav.js sends
+
+        {page}). Same privacy rules as the middleware; same append-only file.'
+      operationId: api_hit_api_hit_post
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Api Hit Api Hit Post
+      tags:
+      - Hit
+x-refined-from:
+- snhp-dev-arena-openapi.json
+- snhp-dev-arena-openapi.yml

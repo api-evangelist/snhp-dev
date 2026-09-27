@@ -1,0 +1,491 @@
+openapi: 3.2.0
+info:
+  title: Snhp Dev Store API
+  version: 0.1.0
+  description: 'Operations tagged store across 2 of this provider''s published API definitions: snhp-dev-openapi.json, snhp-dev-openapi.yml. Each path carries the servers of the definition it was published in.'
+servers:
+- url: https://snhp.dev
+  description: Primary host (also served identically on https://api.snhp.dev, https://www.snhp.dev and https://snhp.fly.dev — the served document declares no servers[]; this block was added by API Evangelist from the provider's llms.txt and agents.json http_base)
+tags:
+- name: Store
+paths:
+  /v1/store/catalog:
+    get:
+      tags:
+      - Store
+      summary: Store Catalog
+      description: 'THE STORE''s shelf: the commodity slots (tier, admission cap,
+
+        predicate id, request doc, serving-backend ids), the anchor SKUs, and the
+
+        two published pricing facts — wholesale-passthrough cost basis on every
+
+        receipt plus the counter fee on top-ups. No key material ever appears
+
+        here.'
+      operationId: store_catalog_v1_store_catalog_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /v1/store/notary_pubkey:
+    get:
+      tags:
+      - Store
+      summary: Store Notary Pubkey
+      description: 'The receipt-signing notary''s PUBLIC key, at a stable path so a verifier
+
+        can PIN it OUT-OF-BAND (not just trust the pubkey embedded in a receipt) and
+
+        confirm it matches the receipt''s pubkey_fingerprint. Returns {pubkey_pem,
+
+        fingerprint, key_source}. This is the STORE receipt notary (vend.receipt_
+
+        signing / NOTARY_KEY_PEM) — DISTINCT from /v1/keys/trust_anchor (first-strike
+
+        CA) and /v1/keys/settlement_notary (AP2 mandates), which are different keys.
+
+
+        key_source is VISIBLE: with ''ephemeral'' a signature proves only signer-
+
+        consistency within one server lifetime; a production notary pins a persistent
+
+        key (''env'', from NOTARY_KEY_PEM). Never returns private material.'
+      operationId: store_notary_pubkey_v1_store_notary_pubkey_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /v1/fetch:
+    post:
+      tags:
+      - Store
+      summary: Store Fetch
+      description: 'Fetch/extract one page → markdown, paid from your wallet at wholesale
+
+        passthrough. Settlement-on-delivery: charged ONLY on non-empty markdown.
+
+
+        Pass your key in an `Authorization: Bearer gt_*` or `X-API-Key` header
+
+        (RECOMMENDED — that reaches the 600/min keyed rate-limit lane; a body-only
+
+        key falls to the 60/min per-IP floor because the limiter never parses
+
+        bodies) or in the JSON body `api_key` (backcompat). The header wins if both
+
+        are present.
+
+
+        A backend or predicate failure is a NORMAL uncharged outcome — 200 with the
+
+        canonical envelope {ok: false, charged: false, reason: ,
+
+        code: } — because you cannot pay for nothing; that asymmetry is
+
+        the product surface, not an HTTP error. `code` is one of unknown_slot,
+
+        slot_unavailable, insufficient_balance, all_backends_failed, predicate_failed;
+
+        a delivered-but-failed call may also carry backends_tried [{id, reason}],
+
+        backends_untried, backend_id, and a retry_hint. One client code path reads
+
+        `charged`/`code` for every outcome. (Legacy keys like `error` survive as
+
+        aliases.) Insufficient balance → 402; a missing or unknown api_key → 401.'
+      operationId: store_fetch_v1_fetch_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FetchIn'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/store/request:
+    post:
+      tags:
+      - Store
+      summary: Store Request
+      description: 'File a request for a capability the store doesn''t stock. Free, keyless
+
+        OK. Returns {request_id, status, watch, check} — the demand loop now hands
+
+        back something to return FOR (GAUNTLET #5). Size-capped, stored as data,
+
+        never rendered raw. Pass `watch: true` WITH an api_key to flag the ask for a
+
+        heads-up on a status flip (poll GET /v1/store/my_requests — poll-based, no
+
+        push); an anonymous watch is ignored, and the chosen flag is echoed back.'
+      operationId: store_request_v1_store_request_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StoreRequestIn'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/store/request/{request_id}:
+    get:
+      tags:
+      - Store
+      summary: Store Request Status
+      description: 'Check a filed request by id: {request_id, status, status_note, filed_at,
+
+        door, text}. `status` is ''logged'' until the shelf-owner acts, then
+
+        status_note carries the reason-to-return. Unknown id → 404. No key material;
+
+        the text is display-truncated and remains untrusted data.'
+      operationId: store_request_status_v1_store_request__request_id__get
+      parameters:
+      - name: request_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Request Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/store/requests:
+    get:
+      tags:
+      - Store
+      summary: Store Requests
+      description: 'The public demand tally (GAUNTLET #5): {total, distinct, recent[],
+
+        requests[]}. `requests` is distinct asks with EXACT-MATCH duplicate counts
+
+        (whitespace/case folded, no fuzzy classification — mechanical, no LLM),
+
+        most-asked first. No key material; text display-truncated.'
+      operationId: store_requests_v1_store_requests_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /v1/store/observatory:
+    get:
+      tags:
+      - Store
+      summary: Store Observatory
+      description: 'The public, citable observatory (vend.observatory.snapshot): per-slot
+
+        call volumes and the MECHANICAL tally of what agents ask for that nobody
+
+        sells yet. Every number is a count, a sum, or an exact-match group — no
+
+        interpretation, no LLM. Aggregate + PSEUDONYMOUS: wallets appear only as
+
+        counts of a keyed pseudonym (repeat_key), never a raw api_key, so NO key
+
+        material can leak. Pure read, no auth. The demand-loop citation asset: what
+
+        the shelf is missing, straight from the raw records.'
+      operationId: store_observatory_v1_store_observatory_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /v1/store/my_requests:
+    get:
+      tags:
+      - Store
+      summary: Store My Requests
+      description: 'Your OWN filings (roadmap: a voter comes back a reachable customer), keyed
+
+        to YOUR api_key — the private counterpart to the public GET /v1/store/requests
+
+        tally. Carry the key in `Authorization: Bearer gt_*` or `X-API-Key`, never a
+
+        query param (a secret must not land in access logs). A missing or unknown key
+
+        → 401. Returns {requests: [{request_id, filed_at, text, status, status_note,
+
+        status_ts, watch, same_ask_count}]}, newest first — text display-truncated,
+
+        still untrusted data; no key material and no repeat_key on the surface. Only
+
+        rows attributable to this key (via the keyed pseudonym, never a raw key match)
+
+        are returned, so one key can never read another''s filings.'
+      operationId: store_my_requests_v1_store_my_requests_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /v1/store/park:
+    post:
+      tags:
+      - Store
+      summary: Store Park
+      description: 'Park an ENCRYPTED blob, get a claim ticket (blind locker, §2c). Charged a
+
+        thin flat park fee ONLY on durable store; an empty/oversize/unencodable blob
+
+        is uncharged. Key via `Authorization: Bearer`/`X-API-Key` (header wins) or
+
+        body `api_key`. The receipt''s content_hash is over YOUR ciphertext, so you
+
+        can prove what you stored without the store ever seeing plaintext.'
+      operationId: store_park_v1_store_park_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ParkIn'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/store/parcel/{ticket}:
+    get:
+      tags:
+      - Store
+      summary: Store Retrieve
+      description: 'Retrieve a parked parcel by its claim ticket (blind locker, §2c). Returns
+
+        {ok, blob_b64, size_bytes, expires_at} — the ciphertext you parked, which
+
+        only YOU can decrypt. Key via `Authorization: Bearer`/`X-API-Key`. A wrong
+
+        owner reads as a missing ticket (404). Retrieval is free (the park settled
+
+        it). An expired TTL is 404; a lost at-rest key is 503.'
+      operationId: store_retrieve_v1_store_parcel__ticket__get
+      parameters:
+      - name: ticket
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Ticket
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/memory/save:
+    post:
+      tags:
+      - Store
+      summary: Memory Save
+      description: 'Save persistent memory for your agent across sessions (alias of
+
+        POST /v1/store/park — the blind locker). You encrypt before saving; the store
+
+        holds only ciphertext (blind custody) and signs a receipt over its hash — it
+
+        cannot read your memory. Saving uses your prepaid wallet (a new key''s 50¢
+
+        starter credit covers first saves); loading it back is free. Same handler and
+
+        behavior as /v1/store/park.'
+      operationId: memory_save_v1_memory_save_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ParkIn'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/memory/parcel/{ticket}:
+    get:
+      tags:
+      - Store
+      summary: Memory Load
+      description: 'Load a memory you saved in an earlier session (alias of
+
+        GET /v1/store/parcel/{ticket}). Returns the ciphertext you saved, which only
+
+        YOU can decrypt; retrieval is free. Same handler and behavior as
+
+        /v1/store/parcel/{ticket}.'
+      operationId: memory_load_v1_memory_parcel__ticket__get
+      parameters:
+      - name: ticket
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Ticket
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+components:
+  schemas:
+    FetchIn:
+      properties:
+        api_key:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Api Key
+        url:
+          type: string
+          maxLength: 2048
+          title: Url
+          description: http(s) URL to read → markdown
+      type: object
+      required:
+      - url
+      title: FetchIn
+    ParkIn:
+      properties:
+        api_key:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Api Key
+        blob_b64:
+          type: string
+          title: Blob B64
+          description: your ciphertext as base64 — ENCRYPT BEFORE PARKING; the store holds only opaque bytes and cannot read them
+        ttl_seconds:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Ttl Seconds
+          description: requested lifetime; clamped to [60s, 7d]. The effective expires_at is returned — never a silent surprise.
+      type: object
+      required:
+      - blob_b64
+      title: ParkIn
+    StoreRequestIn:
+      properties:
+        text:
+          type: string
+          maxLength: 4000
+          title: Text
+          description: what you wish the counter stocked
+        api_key:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Api Key
+        watch:
+          type: boolean
+          title: Watch
+          description: with an api_key, flag this ask to hear back on a status flip — poll GET /v1/store/my_requests; no email/webhook
+          default: false
+      type: object
+      required:
+      - text
+      title: StoreRequestIn
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+x-refined-from:
+- snhp-dev-openapi.json
+- snhp-dev-openapi.yml

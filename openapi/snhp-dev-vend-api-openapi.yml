@@ -1,0 +1,168 @@
+openapi: 3.2.0
+info:
+  title: Snhp Dev Vend API
+  version: 0.1.0
+  description: 'Operations tagged vend across 2 of this provider''s published API definitions: snhp-dev-openapi.json, snhp-dev-openapi.yml. Each path carries the servers of the definition it was published in.'
+servers:
+- url: https://snhp.dev
+  description: Primary host (also served identically on https://api.snhp.dev, https://www.snhp.dev and https://snhp.fly.dev — the served document declares no servers[]; this block was added by API Evangelist from the provider's llms.txt and agents.json http_base)
+tags:
+- name: vend
+paths:
+  /v1/vend/machine:
+    get:
+      tags:
+      - vend
+      summary: Machine Board
+      operationId: machine_board_v1_vend_machine_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /v1/vend/quote:
+    post:
+      tags:
+      - vend
+      summary: Quote
+      operationId: quote_v1_vend_quote_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuoteReq'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/vend/settle/{quote_id}:
+    post:
+      tags:
+      - vend
+      summary: Settle
+      operationId: settle_v1_vend_settle__quote_id__post
+      parameters:
+      - name: quote_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Quote Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+components:
+  schemas:
+    QuoteReq:
+      properties:
+        protocol:
+          type: string
+          title: Protocol
+          default: snhp-price/1
+        machine_id:
+          type: string
+          title: Machine Id
+          default: demo-01
+        intent:
+          $ref: '#/components/schemas/Intent'
+      type: object
+      required:
+      - intent
+      title: QuoteReq
+    BuyerBlock:
+      properties:
+        disclosure:
+          additionalProperties: true
+          type: object
+          title: Disclosure
+          description: '{''utilities'': {sku: $}, ''walk_cost'': $}'
+        peer_proof:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Peer Proof
+      type: object
+      required:
+      - disclosure
+      title: BuyerBlock
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    Intent:
+      properties:
+        sku:
+          type: string
+          title: Sku
+        quantity:
+          type: integer
+          maximum: 3.0
+          minimum: 1.0
+          title: Quantity
+          default: 1
+        substitutes_ok:
+          type: boolean
+          title: Substitutes Ok
+          default: true
+        buyer:
+          anyOf:
+          - $ref: '#/components/schemas/BuyerBlock'
+          - type: 'null'
+      type: object
+      required:
+      - sku
+      title: Intent
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+x-refined-from:
+- snhp-dev-openapi.json
+- snhp-dev-openapi.yml

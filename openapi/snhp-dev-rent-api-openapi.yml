@@ -1,0 +1,133 @@
+openapi: 3.2.0
+info:
+  title: Snhp Dev Rent API
+  version: 0.1.0
+  description: 'Operations tagged rent across 2 of this provider''s published API definitions: snhp-dev-openapi.json, snhp-dev-openapi.yml. Each path carries the servers of the definition it was published in.'
+servers:
+- url: https://snhp.dev
+  description: Primary host (also served identically on https://api.snhp.dev, https://www.snhp.dev and https://snhp.fly.dev — the served document declares no servers[]; this block was added by API Evangelist from the provider's llms.txt and agents.json http_base)
+tags:
+- name: rent
+paths:
+  /v1/rent/metros:
+    get:
+      tags:
+      - rent
+      summary: Metros with market data on file
+      description: 'The metro list backing the advisor. Served from the same table the
+
+        assessment uses, so the picker can never drift from the data.'
+      operationId: rent_metros_v1_rent_metros_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /v1/rent/check:
+    post:
+      tags:
+      - rent
+      summary: Assess a rent-renewal offer (free, no key)
+      description: 'Deterministic assessment of a renewal offer.
+
+
+        Free and keyless by design: this is the top of the funnel and the
+
+        thing we want people to share. Returns a verdict (including ''weak —
+
+        just sign''), the ranked asks, a send-ready message, and — where the
+
+        metro has regulated stock — how to check legal status. It never
+
+        asserts what that status is.'
+      operationId: rent_check_v1_rent_check_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/_RentCheckRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+components:
+  schemas:
+    _RentCheckRequest:
+      properties:
+        metro:
+          type: string
+          title: Metro
+          description: Metro key, e.g. 'denver'. Unknown metros degrade to national context.
+        current_rent:
+          type: integer
+          maximum: 100000.0
+          exclusiveMinimum: 0.0
+          title: Current Rent
+          description: Current monthly rent, USD.
+        offered_rent:
+          type: integer
+          maximum: 100000.0
+          exclusiveMinimum: 0.0
+          title: Offered Rent
+          description: Renewal offer, USD/month.
+        months_at_address:
+          type: integer
+          maximum: 1200.0
+          minimum: 0.0
+          title: Months At Address
+          description: How long you've lived there.
+      type: object
+      required:
+      - metro
+      - current_rent
+      - offered_rent
+      - months_at_address
+      title: _RentCheckRequest
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+x-refined-from:
+- snhp-dev-openapi.json
+- snhp-dev-openapi.yml

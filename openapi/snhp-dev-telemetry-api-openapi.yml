@@ -1,0 +1,206 @@
+openapi: 3.2.0
+info:
+  title: Snhp Dev Telemetry API
+  version: 0.1.0
+  description: 'Operations tagged telemetry across 2 of this provider''s published API definitions: snhp-dev-openapi.json, snhp-dev-openapi.yml. Each path carries the servers of the definition it was published in.'
+servers:
+- url: https://snhp.dev
+  description: Primary host (also served identically on https://api.snhp.dev, https://www.snhp.dev and https://snhp.fly.dev — the served document declares no servers[]; this block was added by API Evangelist from the provider's llms.txt and agents.json http_base)
+tags:
+- name: Telemetry
+  description: Opt-in data sharing + GDPR (export/delete)
+paths:
+  /v1/telemetry/report_outcome:
+    post:
+      tags:
+      - Telemetry
+      summary: Attach an outcome to a previously-recorded recommendation
+      description: Must be called within the same ISO week as the recommendation. Per-week agent-hash bounding caps outcome reporting at ~7 days (by design — eliminates long-horizon behavioral fingerprinting).
+      operationId: telemetry_report_outcome_v1_telemetry_report_outcome_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReportOutcomeRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportOutcomeResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/telemetry/delete:
+    delete:
+      tags:
+      - Telemetry
+      summary: GDPR Article 17 — delete all telemetry rows for this key
+      description: 'Deletes all rows whose week-hash matches any of this key''s possible week hashes within an 18-month retention window. Returns the row count deleted. Note: SQLite/Postgres tombstone reclaim is deferred (full storage reclaim within 30 days).'
+      operationId: telemetry_delete_v1_telemetry_delete_delete
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TelemetryDeleteResponse'
+  /v1/telemetry/export:
+    get:
+      tags:
+      - Telemetry
+      summary: GDPR Article 15 — export all telemetry rows for this key
+      operationId: telemetry_export_v1_telemetry_export_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TelemetryExportResponse'
+components:
+  schemas:
+    ReportOutcomeRequest:
+      properties:
+        recommendation_id:
+          type: string
+          maxLength: 128
+          minLength: 1
+          title: Recommendation Id
+          description: The X-GT-Recommendation-Id returned when share_outcome=True
+        deal_closed:
+          type: boolean
+          title: Deal Closed
+          description: True if a deal was reached
+        my_utility:
+          anyOf:
+          - type: number
+            maximum: 1.0
+            minimum: 0.0
+          - type: 'null'
+          title: My Utility
+          description: Realized utility-to-self in [0, 1] (quantized at write)
+        opponent_utility:
+          anyOf:
+          - type: number
+            maximum: 1.0
+            minimum: 0.0
+          - type: 'null'
+          title: Opponent Utility
+          description: Realized utility-to-opponent if known, in [0, 1]
+      type: object
+      required:
+      - recommendation_id
+      - deal_closed
+      title: ReportOutcomeRequest
+    TelemetryExportResponse:
+      properties:
+        rows:
+          items:
+            $ref: '#/components/schemas/TelemetryRecordOut'
+          type: array
+          title: Rows
+      type: object
+      required:
+      - rows
+      title: TelemetryExportResponse
+    TelemetryDeleteResponse:
+      properties:
+        rows_deleted:
+          type: integer
+          title: Rows Deleted
+      type: object
+      required:
+      - rows_deleted
+      title: TelemetryDeleteResponse
+    ReportOutcomeResponse:
+      properties:
+        accepted:
+          type: boolean
+          title: Accepted
+          description: False if the recommendation_id doesn't exist, doesn't belong to this key, is in a different ISO week (too late), or has already been reported. Idempotent re-report = no-op.
+      type: object
+      required:
+      - accepted
+      title: ReportOutcomeResponse
+    TelemetryRecordOut:
+      properties:
+        recommendation_id:
+          type: string
+          title: Recommendation Id
+        vertical:
+          type: string
+          title: Vertical
+        endpoint:
+          type: string
+          title: Endpoint
+        request_features:
+          additionalProperties: true
+          type: object
+          title: Request Features
+        recommendation:
+          additionalProperties: true
+          type: object
+          title: Recommendation
+        created_at_hour:
+          type: integer
+          title: Created At Hour
+        outcome:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Outcome
+      type: object
+      required:
+      - recommendation_id
+      - vertical
+      - endpoint
+      - request_features
+      - recommendation
+      - created_at_hour
+      - outcome
+      title: TelemetryRecordOut
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+x-refined-from:
+- snhp-dev-openapi.json
+- snhp-dev-openapi.yml

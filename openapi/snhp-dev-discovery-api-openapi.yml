@@ -1,0 +1,602 @@
+openapi: 3.2.0
+info:
+  title: Snhp Dev Discovery API
+  version: 0.1.0
+  description: 'Operations tagged discovery across 2 of this provider''s published API definitions: snhp-dev-openapi.json, snhp-dev-openapi.yml. Each path carries the servers of the definition it was published in.'
+servers:
+- url: https://snhp.dev
+  description: Primary host (also served identically on https://api.snhp.dev, https://www.snhp.dev and https://snhp.fly.dev — the served document declares no servers[]; this block was added by API Evangelist from the provider's llms.txt and agents.json http_base)
+tags:
+- name: Discovery
+  description: Catalog + agent onboarding
+paths:
+  /.well-known/mcp/server-card.json:
+    get:
+      tags:
+      - Discovery
+      summary: MCP server card (SEP-1649 — lets registries skip a live scan)
+      description: 'Static MCP server card in the SEP-1649 shape (serverInfo + tools/resources/
+
+        prompts + authentication) so Smithery/registries index the hosted
+
+        streamable-HTTP server WITHOUT a live initialize scan (which can 502 on a cold
+
+        start, and which some scanners can''t complete through the /mcp -> /mcp/
+
+        redirect). Generated from the live tool definitions so it never drifts.
+
+
+        This card describes the CORE door only: `_mcp_tools_for_card()` enumerates the
+
+        live `mcp` instance''s tool manager, so it auto-slims to the 15 hero-first core
+
+        tools (no hand-maintained list to drift). The full/legacy surface is pointed
+
+        at via `transport_pro` (/mcp/pro/).'
+      operationId: mcp_server_card__well_known_mcp_server_card_json_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Mcp Server Card  Well Known Mcp Server Card Json Get
+  /.well-known/agent-card.json:
+    get:
+      tags:
+      - Discovery
+      summary: A2A Agent Card (advertises SNHP extension)
+      description: 'Google A2A Agent Card. The `capabilities.extensions` entry tells any A2A
+
+        client that this agent speaks the SNHP verified-negotiation protocol, so two
+
+        SNHP agents can discover each other and opt in.'
+      operationId: agent_card__well_known_agent_card_json_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Agent Card  Well Known Agent Card Json Get
+  /.well-known/agents.json:
+    get:
+      tags:
+      - Discovery
+      summary: Machine-readable agent-capability manifest for the SNHP store
+      description: 'A self-describing manifest of what this counter offers and how an agent
+
+        pays for it: name, free_tools[], capabilities[], endpoints, auth, payment,
+
+        demand box. Free-first (RESHAPE.md §4): the free negotiation / auction /
+
+        matching math leads; the paid counter (agent memory, then the $2 receipted
+
+        session) follows; wallet + fee sit under structured keys, never the headline.
+
+        Written in the vocabulary an agent''s tool-selector needs (''your next move in
+
+        any price negotiation'', ''remember something across sessions''). Pure READ, no
+
+        auth, no key material. The fee is read from the billing constants so it can
+
+        never drift from what a top-up actually charges. Honest: only the two LIVE
+
+        paid slots are listed (no page-fetch slot exists today).'
+      operationId: agents_json__well_known_agents_json_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Agents Json  Well Known Agents Json Get
+  /v1/registry/register_operator:
+    post:
+      tags:
+      - Discovery
+      summary: Register an operator identity (self-attested), get a signed attestation
+      operationId: register_operator_v1_registry_register_operator_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterOperatorRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Register Operator V1 Registry Register Operator Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/registry/request_domain_challenge:
+    post:
+      tags:
+      - Discovery
+      summary: Get the DNS-TXT record to publish to prove domain control
+      operationId: request_domain_challenge_v1_registry_request_domain_challenge_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DomainChallengeRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Request Domain Challenge V1 Registry Request Domain Challenge Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/registry/verify_domain:
+    post:
+      tags:
+      - Discovery
+      summary: Verify the DNS-TXT challenge and register as domain-verified
+      operationId: verify_domain_v1_registry_verify_domain_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyDomainRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Verify Domain V1 Registry Verify Domain Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/keys/rotate:
+    post:
+      tags:
+      - Discovery
+      summary: Rotate Key
+      description: 'Rotate your API key: a replacement is issued, the full credit
+
+        balance carries over, and the old key is invalidated IMMEDIATELY (no
+
+        grace period — possession of the key is the authorization, and a
+
+        compromised key must die at once). Save the new key: keys are shown
+
+        once and cannot be recovered, only rotated. Lost your key entirely?
+
+        Email the contact address you registered with from that same address —
+
+        recovery is a manual, human-verified process by design.'
+      operationId: rotate_key_v1_keys_rotate_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RotateIn'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/advice/request:
+    post:
+      tags:
+      - Discovery
+      summary: Advice Request
+      description: 'The null-query intake: ask for anything the machine doesn''t stock.
+
+        Free. Size-capped, stored as data, never rendered raw. Unmet demand
+
+        decides what gets stocked next. Legacy name for the same intake as
+
+        POST /v1/store/request — one box, two doors (GAUNTLET #5): every
+
+        filing gets a request_id you can check.
+
+
+        Pass `watch: true` WITH an api_key to flag the ask for a heads-up on a
+
+        status flip (poll GET /v1/store/my_requests to see it — the notify is
+
+        poll-based, no push); an anonymous watch is ignored. The chosen flag is
+
+        echoed back as `watch`.'
+      operationId: advice_request_v1_advice_request_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestIn'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/internal/params:
+    get:
+      tags:
+      - Discovery
+      summary: Currently-active negotiation parameters (for telemetry/debug)
+      description: Returns every tunable parameter, its default, current active value, whether it's overridden via env var, and metadata (rationale + source). Useful for confirming which Optuna-tuned values are live + detecting drift. No auth required (server-state only, no per-call data).
+      operationId: internal_params_v1_internal_params_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /v1/catalog:
+    get:
+      tags:
+      - Discovery
+      summary: Tool catalog for agent discovery
+      description: Machine-readable list of all tools with cost class and stability. Cacheable, no auth required. Agents read this first.
+      operationId: catalog_v1_catalog_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /llms.txt:
+    get:
+      tags:
+      - Discovery
+      summary: Agent-readable guide to the toolkit
+      operationId: llms_txt_llms_txt_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            text/plain:
+              schema:
+                type: string
+  /llms-full.txt:
+    get:
+      tags:
+      - Discovery
+      summary: Detailed companion to /llms.txt (store endpoints, auth, MPP flow)
+      description: 'A strict SUPERSET of /llms.txt: the same content, then a store reference
+
+        appendix (endpoint list, auth, money unit + fee, MCP tool catalog, the
+
+        no-human MPP flow). Built by appending _LLMS_FULL_APPENDIX to the /llms.txt
+
+        body so the two can never tell divergent stories.'
+      operationId: llms_full_txt_llms_full_txt_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            text/plain:
+              schema:
+                type: string
+  /PRICING.md:
+    get:
+      tags:
+      - Discovery
+      summary: Pricing & service posture
+      operationId: pricing_md_PRICING_md_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            text/plain:
+              schema:
+                type: string
+  /v1/keys:
+    post:
+      tags:
+      - Discovery
+      summary: Programmatic API key issuance (no human approval)
+      description: 'Self-serve key issuance for AI agents. No human approval gate. Idempotent on agent_id within 24h. Issuance itself is rate-limited to 10 requests/hour per IP. All endpoints currently free. The returned `rate_limit_per_minute` (600) is your per-key lane — it applies ONLY when you send the key as a header (`Authorization: Bearer gt_*` or `X-API-Key: gt_*`). Callers with no key, or with a key only in the request body, share the 60/min-per-IP free floor.'
+      operationId: issue_key_v1_keys_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IssueKeyRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IssueKeyResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/keys/trust_anchor:
+    get:
+      tags:
+      - Discovery
+      summary: Public key for verifying first-strike attestations
+      operationId: keys_trust_anchor_v1_keys_trust_anchor_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            text/plain:
+              schema:
+                type: string
+  /v1/keys/settlement_notary:
+    get:
+      tags:
+      - Discovery
+      summary: Public key for verifying AP2 Cart/Intent mandates (separate from the CA)
+      operationId: keys_settlement_notary_v1_keys_settlement_notary_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            text/plain:
+              schema:
+                type: string
+  /health:
+    get:
+      tags:
+      - Discovery
+      summary: Liveness check
+      operationId: health_health_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+components:
+  schemas:
+    RegisterOperatorRequest:
+      properties:
+        operator_id:
+          type: string
+          title: Operator Id
+          description: Stable operator identity (e.g. a domain or org id)
+        public_key_b64:
+          type: string
+          title: Public Key B64
+          description: Base64 of the 32-byte Ed25519 operator public key
+        display_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Display Name
+      type: object
+      required:
+      - operator_id
+      - public_key_b64
+      title: RegisterOperatorRequest
+    IssueKeyResponse:
+      properties:
+        api_key:
+          type: string
+          title: Api Key
+        tier:
+          type: string
+          title: Tier
+        rate_limit_per_minute:
+          type: integer
+          title: Rate Limit Per Minute
+          description: 'Your per-key lane: 600/min — but ONLY when the key is sent as a header (Authorization: Bearer / X-API-Key). Keyless or body-only callers share the 60/min-per-IP free floor.'
+        created_at:
+          type: integer
+          title: Created At
+        wallet:
+          $ref: '#/components/schemas/WalletSummary'
+          description: The one prepaid wallet — starter + funded, in millicents
+        telemetry_consent:
+          type: boolean
+          title: Telemetry Consent
+          description: True if opted into telemetry at issuance
+        reused:
+          type: boolean
+          title: Reused
+          description: True if an existing key for this agent_id was returned
+      type: object
+      required:
+      - api_key
+      - tier
+      - rate_limit_per_minute
+      - created_at
+      - wallet
+      - telemetry_consent
+      - reused
+      title: IssueKeyResponse
+    WalletSummary:
+      properties:
+        starter_millicents:
+          type: integer
+          title: Starter Millicents
+          description: The one-time 50¢ starter grant (millicents, 1000/cent)
+        funded_millicents:
+          type: integer
+          title: Funded Millicents
+          description: Own-money top-ups, in millicents
+        total_millicents:
+          type: integer
+          title: Total Millicents
+          description: Spendable total across both buckets
+      type: object
+      required:
+      - starter_millicents
+      - funded_millicents
+      - total_millicents
+      title: WalletSummary
+    DomainChallengeRequest:
+      properties:
+        domain:
+          type: string
+          title: Domain
+          description: Bare hostname you control, e.g. acme.example
+        public_key_b64:
+          type: string
+          title: Public Key B64
+      type: object
+      required:
+      - domain
+      - public_key_b64
+      title: DomainChallengeRequest
+    IssueKeyRequest:
+      properties:
+        agent_id:
+          type: string
+          maxLength: 128
+          minLength: 3
+          title: Agent Id
+          description: Stable identifier for the calling agent
+        contact_email:
+          type: string
+          title: Contact Email
+          description: Contact email for issues / overage notifications
+        intended_use_summary:
+          type: string
+          maxLength: 1024
+          minLength: 8
+          title: Intended Use Summary
+          description: One-sentence description of the intended use case
+        telemetry_consent:
+          type: boolean
+          title: Telemetry Consent
+          description: Opt-in to contribute anonymized recommendation→outcome pairs to the prior corpus. Default False. Set at issuance and immutable afterwards (revocation = /v1/telemetry/delete + don't pass share_outcome=True). See /llms.txt for the privacy contract.
+          default: false
+      type: object
+      required:
+      - agent_id
+      - contact_email
+      - intended_use_summary
+      title: IssueKeyRequest
+    RequestIn:
+      properties:
+        text:
+          type: string
+          maxLength: 4000
+          title: Text
+          description: what you wish the machine stocked
+        api_key:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Api Key
+        watch:
+          type: boolean
+          title: Watch
+          description: with an api_key, flag this ask to hear back on a status flip — poll GET /v1/store/my_requests; no email/webhook
+          default: false
+      type: object
+      required:
+      - text
+      title: RequestIn
+    VerifyDomainRequest:
+      properties:
+        domain:
+          type: string
+          title: Domain
+        public_key_b64:
+          type: string
+          title: Public Key B64
+        display_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Display Name
+      type: object
+      required:
+      - domain
+      - public_key_b64
+      title: VerifyDomainRequest
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    RotateIn:
+      properties:
+        api_key:
+          type: string
+          title: Api Key
+      type: object
+      required:
+      - api_key
+      title: RotateIn
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+x-refined-from:
+- snhp-dev-openapi.json
+- snhp-dev-openapi.yml

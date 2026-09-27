@@ -1,0 +1,32 @@
+openapi: 3.2.0
+info:
+  title: Snhp Dev Block API
+  version: 0.1.0
+  description: 'Operations tagged Block across 2 of this provider''s published API definitions: snhp-dev-arena-openapi.json, snhp-dev-arena-openapi.yml. Each path carries the servers of the definition it was published in.'
+servers:
+- url: https://arena.snhp.dev
+  description: Arena host (the served document declares no servers[]; added by API Evangelist from the fetch host, which the provider's llms.txt names as arena.snhp.dev)
+tags:
+- name: Block
+paths:
+  /block/live.json:
+    get:
+      summary: Block Live Json
+      description: 'HTTP snapshot for no-WS clients: cumulative totals + the last
+
+        day-records. BLOCK.public is swapped atomically after each day.'
+      operationId: block_live_json_block_live_json_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Block Live Json Block Live Json Get
+      tags:
+      - Block
+x-refined-from:
+- snhp-dev-arena-openapi.json
+- snhp-dev-arena-openapi.yml

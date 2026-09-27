@@ -1,0 +1,40 @@
+openapi: 3.2.0
+info:
+  title: Snhp Dev Notary API
+  version: 0.1.0
+  description: 'Operations tagged notary across 2 of this provider''s published API definitions: snhp-dev-openapi.json, snhp-dev-openapi.yml. Each path carries the servers of the definition it was published in.'
+servers:
+- url: https://snhp.dev
+  description: Primary host (also served identically on https://api.snhp.dev, https://www.snhp.dev and https://snhp.fly.dev — the served document declares no servers[]; this block was added by API Evangelist from the provider's llms.txt and agents.json http_base)
+tags:
+- name: notary
+paths:
+  /v1/notary/key:
+    get:
+      tags:
+      - notary
+      summary: The notary's public signing key (verify quote attestations offline)
+      description: Returns the Ed25519 PUBLIC key that signs SNHP notary receipts — the `attestation` block on /v1/offer/quote and any receipt POSTed to /v1/notary/verify. `key_source` is 'env' (a persistent key set via NOTARY_KEY_PEM — signatures survive restarts) or 'ephemeral' (a fresh per-process key — historical signatures become unverifiable across a restart). The private key never leaves the server.
+      operationId: notary_key_v1_notary_key_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /v1/notary/verify:
+    post:
+      tags:
+      - notary
+      summary: Verify notary receipts standalone (signature + discount-only + chain)
+      description: 'Body: a single receipt JSON, a JSON array of receipts, or {"receipts": [...]}. Each receipt is verified STANDALONE — the canonical signature (against the embedded pubkey, or this server''s notary key), the discount-only invariant (p ≤ ℓ) re-checked, and a_prime_ok re-derived from the receipt''s own ℓ/c_eff/β — plus the prev_hash chain across the sequence. No signing key is needed; the same checks run client-side with only GET /v1/notary/key.'
+      operationId: notary_verify_v1_notary_verify_post
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+x-refined-from:
+- snhp-dev-openapi.json
+- snhp-dev-openapi.yml

@@ -1,0 +1,26 @@
+openapi: 3.2.0
+info:
+  title: Snhp Dev World API
+  version: 0.1.0
+  description: 'Operations tagged World across 2 of this provider''s published API definitions: snhp-dev-arena-openapi.json, snhp-dev-arena-openapi.yml. Each path carries the servers of the definition it was published in.'
+servers:
+- url: https://arena.snhp.dev
+  description: Arena host (the served document declares no servers[]; added by API Evangelist from the fetch host, which the provider's llms.txt names as arena.snhp.dev)
+tags:
+- name: World
+paths:
+  /world:
+    get:
+      summary: World
+      operationId: world_world_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+      tags:
+      - World
+x-refined-from:
+- snhp-dev-arena-openapi.json
+- snhp-dev-arena-openapi.yml

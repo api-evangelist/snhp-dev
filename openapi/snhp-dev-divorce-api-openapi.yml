@@ -1,0 +1,195 @@
+openapi: 3.2.0
+info:
+  title: Snhp Dev Divorce API
+  version: 0.1.0
+  description: 'Operations tagged Divorce across 2 of this provider''s published API definitions: snhp-dev-arena-openapi.json, snhp-dev-arena-openapi.yml. Each path carries the servers of the definition it was published in.'
+servers:
+- url: https://arena.snhp.dev
+  description: Arena host (the served document declares no servers[]; added by API Evangelist from the fetch host, which the provider's llms.txt names as arena.snhp.dev)
+tags:
+- name: Divorce
+paths:
+  /v1/divorce/run:
+    post:
+      summary: Run
+      operationId: run_v1_divorce_run_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RunRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Run V1 Divorce Run Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      tags:
+      - Divorce
+  /v1/divorce/case/{case_no}:
+    get:
+      summary: Replay Case
+      description: Same number, same divorce — deterministic replay from the ledger.
+      operationId: replay_case_v1_divorce_case__case_no__get
+      parameters:
+      - name: case_no
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Case No
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Replay Case V1 Divorce Case  Case No  Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      tags:
+      - Divorce
+  /v1/divorce/archetypes:
+    get:
+      summary: Archetypes
+      description: The builder's card data — archetype names, slider presets, hillables.
+      operationId: archetypes_v1_divorce_archetypes_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Archetypes V1 Divorce Archetypes Get
+      tags:
+      - Divorce
+components:
+  schemas:
+    RunRequest:
+      properties:
+        a:
+          $ref: '#/components/schemas/SideSpec'
+        b:
+          $ref: '#/components/schemas/SideSpec'
+        wildcard_label:
+          type: string
+          maxLength: 40
+          title: Wildcard Label
+          default: the sentimental item
+        fronts:
+          items:
+            type: string
+          type: array
+          maxItems: 2
+          title: Fronts
+          default:
+          - dog
+        seed:
+          anyOf:
+          - type: integer
+            maximum: 10000000.0
+            minimum: 1.0
+          - type: 'null'
+          title: Seed
+        rel:
+          type: string
+          title: Rel
+          default: marriage
+      type: object
+      required:
+      - a
+      - b
+      title: RunRequest
+    SideSpec:
+      properties:
+        name:
+          type: string
+          maxLength: 24
+          minLength: 1
+          title: Name
+        archetype:
+          type: string
+          title: Archetype
+        pettiness:
+          type: number
+          maximum: 1.0
+          minimum: 0.0
+          title: Pettiness
+        spite:
+          type: number
+          maximum: 1.0
+          minimum: 0.0
+          title: Spite
+        patience:
+          type: number
+          maximum: 1.0
+          minimum: 0.0
+          title: Patience
+        hill:
+          type: string
+          title: Hill
+      type: object
+      required:
+      - name
+      - archetype
+      - pettiness
+      - spite
+      - patience
+      - hill
+      title: SideSpec
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+x-refined-from:
+- snhp-dev-arena-openapi.json
+- snhp-dev-arena-openapi.yml

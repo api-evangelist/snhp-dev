@@ -1,0 +1,1059 @@
+openapi: 3.2.0
+info:
+  title: Snhp Dev Billing API
+  version: 0.1.0
+  description: 'Operations tagged billing across 2 of this provider''s published API definitions: snhp-dev-openapi.json, snhp-dev-openapi.yml. Each path carries the servers of the definition it was published in.'
+servers:
+- url: https://snhp.dev
+  description: Primary host (also served identically on https://api.snhp.dev, https://www.snhp.dev and https://snhp.fly.dev — the served document declares no servers[]; this block was added by API Evangelist from the provider's llms.txt and agents.json http_base)
+tags:
+- name: Billing
+paths:
+  /v1/billing/checkout_session:
+    post:
+      tags:
+      - Billing
+      summary: Checkout Session
+      operationId: checkout_session_v1_billing_checkout_session_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckoutIn'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/billing/agentic_topup:
+    post:
+      tags:
+      - Billing
+      summary: Agentic Topup
+      description: 'Fund the wallet by redeeming an agent-carried Shared Payment Token — no
+
+        human at a hosted Checkout URL. Same counter fee (5% + 30¢) as every top-up;
+
+        the fee is printed in the response as fee_cents.
+
+
+        PREVIEW: Stripe''s SPT flow is a versioned preview and needs preview
+
+        services-terms acceptance + a US legal entity + a rotated key before live
+
+        use (see vend/AGENTIC_PAYMENTS.md). Test mode works with the monkeypatched
+
+        Stripe layer / an ordinary sk_test_* + a test-helper token.'
+      operationId: agentic_topup_v1_billing_agentic_topup_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgenticTopupIn'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/billing/webhook:
+    post:
+      tags:
+      - Billing
+      summary: Webhook
+      operationId: webhook_v1_billing_webhook_post
+      parameters:
+      - name: stripe-signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Stripe-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/billing/balance:
+    get:
+      tags:
+      - Billing
+      summary: Balance
+      description: 'The ONE wallet, in millicents (1000 per cent), with the starter grant
+
+        and own-money buckets both visible — the balance no longer lies about the
+
+        50¢ (STORE.md §6). The key travels in the X-API-Key header, never a query
+
+        param (a secret must not land in access logs or proxies).
+
+
+        `guaranteed_calls_remaining` (roadmap: fund the pipeline before the 402) is a
+
+        CONSERVATIVE floor per registered commodity slot: total // max_price_millicents
+
+        — how many calls the wallet can afford if EVERY call cost the published
+
+        ceiling. It is a floor because calls settle at wholesale passthrough (usually
+
+        well under the cap), so the real number is ≥ this. Stateless and mechanical:
+
+        no trailing average, no state, no telemetry read. An UNAVAILABLE slot (no
+
+        healthy backend) reports 0 — you are guaranteed no calls it cannot serve.'
+      operationId: balance_v1_billing_balance_get
+      parameters:
+      - name: X-API-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          title: X-Api-Key
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/advice/session:
+    post:
+      tags:
+      - Billing
+      summary: Open Advice Session
+      description: 'Open a PAID negotiation session: $2 once covers every move of this
+
+        negotiation (cap 10 moves, 7 days). Category-tuned, deterministic,
+
+        receipted. The free generic tool is POST /v1/negotiate/turn — pay for
+
+        the tuned, auditable, replayable version. Pass their_offers to get the
+
+        first move back with the session.'
+      operationId: open_advice_session_v1_advice_session_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionOpenIn'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/advice/move:
+    post:
+      tags:
+      - Billing
+      summary: Advice Move
+      description: 'A move inside your paid session — no additional charge. Pass the
+
+        FULL offer history each time, oldest first.'
+      operationId: advice_move_v1_advice_move_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionMoveIn'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/advice/bundle:
+    post:
+      tags:
+      - Billing
+      summary: Advice Bundle Move
+      description: 'A MULTI-ISSUE move inside your paid session — the logrolling tier the
+
+        free tool lacks. No additional charge. Returns the recommended package
+
+        (guaranteed to clear your stated BATNA), trade logic, inferred
+
+        counterparty priorities, acceptance probability, and the receipt.'
+      operationId: advice_bundle_move_v1_advice_bundle_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BundleMoveIn'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/advice/close:
+    post:
+      tags:
+      - Billing
+      summary: Close Advice Session
+      description: 'Mark the negotiation finished. Optional but good hygiene — it
+
+        timestamps the outcome, which calibrates the category priors. Returns the
+
+        `closed` flag AND a signed session-summary receipt (GAUNTLET #4: the close
+
+        used to emit nothing auditable) — moves count, total charged, and the
+
+        per-move context_hashes — for the customer to hand a principal. An unknown
+
+        session or key mismatch → 404 (indistinguishable, so a session id can''t be
+
+        probed with someone else''s key).'
+      operationId: close_advice_session_v1_advice_close_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionCloseIn'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/keys/rotate:
+    post:
+      tags:
+      - Billing
+      summary: Rotate Key
+      description: 'Rotate your API key: a replacement is issued, the full credit
+
+        balance carries over, and the old key is invalidated IMMEDIATELY (no
+
+        grace period — possession of the key is the authorization, and a
+
+        compromised key must die at once). Save the new key: keys are shown
+
+        once and cannot be recovered, only rotated. Lost your key entirely?
+
+        Email the contact address you registered with from that same address —
+
+        recovery is a manual, human-verified process by design.'
+      operationId: rotate_key_v1_keys_rotate_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RotateIn'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/advice/request:
+    post:
+      tags:
+      - Billing
+      summary: Advice Request
+      description: 'The null-query intake: ask for anything the machine doesn''t stock.
+
+        Free. Size-capped, stored as data, never rendered raw. Unmet demand
+
+        decides what gets stocked next. Legacy name for the same intake as
+
+        POST /v1/store/request — one box, two doors (GAUNTLET #5): every
+
+        filing gets a request_id you can check.
+
+
+        Pass `watch: true` WITH an api_key to flag the ask for a heads-up on a
+
+        status flip (poll GET /v1/store/my_requests to see it — the notify is
+
+        poll-based, no push); an anonymous watch is ignored. The chosen flag is
+
+        echoed back as `watch`.'
+      operationId: advice_request_v1_advice_request_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestIn'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/store/catalog:
+    get:
+      tags:
+      - Billing
+      summary: Store Catalog
+      description: 'THE STORE''s shelf: the commodity slots (tier, admission cap,
+
+        predicate id, request doc, serving-backend ids), the anchor SKUs, and the
+
+        two published pricing facts — wholesale-passthrough cost basis on every
+
+        receipt plus the counter fee on top-ups. No key material ever appears
+
+        here.'
+      operationId: store_catalog_v1_store_catalog_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /v1/store/notary_pubkey:
+    get:
+      tags:
+      - Billing
+      summary: Store Notary Pubkey
+      description: 'The receipt-signing notary''s PUBLIC key, at a stable path so a verifier
+
+        can PIN it OUT-OF-BAND (not just trust the pubkey embedded in a receipt) and
+
+        confirm it matches the receipt''s pubkey_fingerprint. Returns {pubkey_pem,
+
+        fingerprint, key_source}. This is the STORE receipt notary (vend.receipt_
+
+        signing / NOTARY_KEY_PEM) — DISTINCT from /v1/keys/trust_anchor (first-strike
+
+        CA) and /v1/keys/settlement_notary (AP2 mandates), which are different keys.
+
+
+        key_source is VISIBLE: with ''ephemeral'' a signature proves only signer-
+
+        consistency within one server lifetime; a production notary pins a persistent
+
+        key (''env'', from NOTARY_KEY_PEM). Never returns private material.'
+      operationId: store_notary_pubkey_v1_store_notary_pubkey_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /v1/fetch:
+    post:
+      tags:
+      - Billing
+      summary: Store Fetch
+      description: 'Fetch/extract one page → markdown, paid from your wallet at wholesale
+
+        passthrough. Settlement-on-delivery: charged ONLY on non-empty markdown.
+
+
+        Pass your key in an `Authorization: Bearer gt_*` or `X-API-Key` header
+
+        (RECOMMENDED — that reaches the 600/min keyed rate-limit lane; a body-only
+
+        key falls to the 60/min per-IP floor because the limiter never parses
+
+        bodies) or in the JSON body `api_key` (backcompat). The header wins if both
+
+        are present.
+
+
+        A backend or predicate failure is a NORMAL uncharged outcome — 200 with the
+
+        canonical envelope {ok: false, charged: false, reason: ,
+
+        code: } — because you cannot pay for nothing; that asymmetry is
+
+        the product surface, not an HTTP error. `code` is one of unknown_slot,
+
+        slot_unavailable, insufficient_balance, all_backends_failed, predicate_failed;
+
+        a delivered-but-failed call may also carry backends_tried [{id, reason}],
+
+        backends_untried, backend_id, and a retry_hint. One client code path reads
+
+        `charged`/`code` for every outcome. (Legacy keys like `error` survive as
+
+        aliases.) Insufficient balance → 402; a missing or unknown api_key → 401.'
+      operationId: store_fetch_v1_fetch_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FetchIn'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/store/request:
+    post:
+      tags:
+      - Billing
+      summary: Store Request
+      description: 'File a request for a capability the store doesn''t stock. Free, keyless
+
+        OK. Returns {request_id, status, watch, check} — the demand loop now hands
+
+        back something to return FOR (GAUNTLET #5). Size-capped, stored as data,
+
+        never rendered raw. Pass `watch: true` WITH an api_key to flag the ask for a
+
+        heads-up on a status flip (poll GET /v1/store/my_requests — poll-based, no
+
+        push); an anonymous watch is ignored, and the chosen flag is echoed back.'
+      operationId: store_request_v1_store_request_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StoreRequestIn'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/store/request/{request_id}:
+    get:
+      tags:
+      - Billing
+      summary: Store Request Status
+      description: 'Check a filed request by id: {request_id, status, status_note, filed_at,
+
+        door, text}. `status` is ''logged'' until the shelf-owner acts, then
+
+        status_note carries the reason-to-return. Unknown id → 404. No key material;
+
+        the text is display-truncated and remains untrusted data.'
+      operationId: store_request_status_v1_store_request__request_id__get
+      parameters:
+      - name: request_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Request Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/store/requests:
+    get:
+      tags:
+      - Billing
+      summary: Store Requests
+      description: 'The public demand tally (GAUNTLET #5): {total, distinct, recent[],
+
+        requests[]}. `requests` is distinct asks with EXACT-MATCH duplicate counts
+
+        (whitespace/case folded, no fuzzy classification — mechanical, no LLM),
+
+        most-asked first. No key material; text display-truncated.'
+      operationId: store_requests_v1_store_requests_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /v1/store/observatory:
+    get:
+      tags:
+      - Billing
+      summary: Store Observatory
+      description: 'The public, citable observatory (vend.observatory.snapshot): per-slot
+
+        call volumes and the MECHANICAL tally of what agents ask for that nobody
+
+        sells yet. Every number is a count, a sum, or an exact-match group — no
+
+        interpretation, no LLM. Aggregate + PSEUDONYMOUS: wallets appear only as
+
+        counts of a keyed pseudonym (repeat_key), never a raw api_key, so NO key
+
+        material can leak. Pure read, no auth. The demand-loop citation asset: what
+
+        the shelf is missing, straight from the raw records.'
+      operationId: store_observatory_v1_store_observatory_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /v1/store/my_requests:
+    get:
+      tags:
+      - Billing
+      summary: Store My Requests
+      description: 'Your OWN filings (roadmap: a voter comes back a reachable customer), keyed
+
+        to YOUR api_key — the private counterpart to the public GET /v1/store/requests
+
+        tally. Carry the key in `Authorization: Bearer gt_*` or `X-API-Key`, never a
+
+        query param (a secret must not land in access logs). A missing or unknown key
+
+        → 401. Returns {requests: [{request_id, filed_at, text, status, status_note,
+
+        status_ts, watch, same_ask_count}]}, newest first — text display-truncated,
+
+        still untrusted data; no key material and no repeat_key on the surface. Only
+
+        rows attributable to this key (via the keyed pseudonym, never a raw key match)
+
+        are returned, so one key can never read another''s filings.'
+      operationId: store_my_requests_v1_store_my_requests_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /v1/store/park:
+    post:
+      tags:
+      - Billing
+      summary: Store Park
+      description: 'Park an ENCRYPTED blob, get a claim ticket (blind locker, §2c). Charged a
+
+        thin flat park fee ONLY on durable store; an empty/oversize/unencodable blob
+
+        is uncharged. Key via `Authorization: Bearer`/`X-API-Key` (header wins) or
+
+        body `api_key`. The receipt''s content_hash is over YOUR ciphertext, so you
+
+        can prove what you stored without the store ever seeing plaintext.'
+      operationId: store_park_v1_store_park_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ParkIn'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/store/parcel/{ticket}:
+    get:
+      tags:
+      - Billing
+      summary: Store Retrieve
+      description: 'Retrieve a parked parcel by its claim ticket (blind locker, §2c). Returns
+
+        {ok, blob_b64, size_bytes, expires_at} — the ciphertext you parked, which
+
+        only YOU can decrypt. Key via `Authorization: Bearer`/`X-API-Key`. A wrong
+
+        owner reads as a missing ticket (404). Retrieval is free (the park settled
+
+        it). An expired TTL is 404; a lost at-rest key is 503.'
+      operationId: store_retrieve_v1_store_parcel__ticket__get
+      parameters:
+      - name: ticket
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Ticket
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/memory/save:
+    post:
+      tags:
+      - Billing
+      summary: Memory Save
+      description: 'Save persistent memory for your agent across sessions (alias of
+
+        POST /v1/store/park — the blind locker). You encrypt before saving; the store
+
+        holds only ciphertext (blind custody) and signs a receipt over its hash — it
+
+        cannot read your memory. Saving uses your prepaid wallet (a new key''s 50¢
+
+        starter credit covers first saves); loading it back is free. Same handler and
+
+        behavior as /v1/store/park.'
+      operationId: memory_save_v1_memory_save_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ParkIn'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/memory/parcel/{ticket}:
+    get:
+      tags:
+      - Billing
+      summary: Memory Load
+      description: 'Load a memory you saved in an earlier session (alias of
+
+        GET /v1/store/parcel/{ticket}). Returns the ciphertext you saved, which only
+
+        YOU can decrypt; retrieval is free. Same handler and behavior as
+
+        /v1/store/parcel/{ticket}.'
+      operationId: memory_load_v1_memory_parcel__ticket__get
+      parameters:
+      - name: ticket
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Ticket
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+components:
+  schemas:
+    AgenticTopupIn:
+      properties:
+        api_key:
+          type: string
+          title: Api Key
+        amount_cents:
+          type: integer
+          title: Amount Cents
+          description: cents of wallet credit to buy (min 200); you pay this + the counter fee (5% + 30¢)
+        payment_token:
+          type: string
+          title: Payment Token
+          description: a Stripe Shared Payment Token (spt_…) the agent carries
+      type: object
+      required:
+      - api_key
+      - amount_cents
+      - payment_token
+      title: AgenticTopupIn
+    FetchIn:
+      properties:
+        api_key:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Api Key
+        url:
+          type: string
+          maxLength: 2048
+          title: Url
+          description: http(s) URL to read → markdown
+      type: object
+      required:
+      - url
+      title: FetchIn
+    ParkIn:
+      properties:
+        api_key:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Api Key
+        blob_b64:
+          type: string
+          title: Blob B64
+          description: your ciphertext as base64 — ENCRYPT BEFORE PARKING; the store holds only opaque bytes and cannot read them
+        ttl_seconds:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Ttl Seconds
+          description: requested lifetime; clamped to [60s, 7d]. The effective expires_at is returned — never a silent surprise.
+      type: object
+      required:
+      - blob_b64
+      title: ParkIn
+    CheckoutIn:
+      properties:
+        api_key:
+          type: string
+          title: Api Key
+        pack:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Pack
+          description: small ($10.80) | medium ($52.80) | large ($210.30)
+        amount_cents:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Amount Cents
+          description: 'custom top-up: cents of wallet credit (min 200); you pay this + the counter fee (5% + 30¢)'
+        success_url:
+          type: string
+          title: Success Url
+          default: https://snhp.dev/paid
+        cancel_url:
+          type: string
+          title: Cancel Url
+          default: https://snhp.dev/cancel
+      type: object
+      required:
+      - api_key
+      title: CheckoutIn
+    RequestIn:
+      properties:
+        text:
+          type: string
+          maxLength: 4000
+          title: Text
+          description: what you wish the machine stocked
+        api_key:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Api Key
+        watch:
+          type: boolean
+          title: Watch
+          description: with an api_key, flag this ask to hear back on a status flip — poll GET /v1/store/my_requests; no email/webhook
+          default: false
+      type: object
+      required:
+      - text
+      title: RequestIn
+    SessionCloseIn:
+      properties:
+        api_key:
+          type: string
+          title: Api Key
+        session_id:
+          type: string
+          title: Session Id
+      type: object
+      required:
+      - api_key
+      - session_id
+      title: SessionCloseIn
+    StoreRequestIn:
+      properties:
+        text:
+          type: string
+          maxLength: 4000
+          title: Text
+          description: what you wish the counter stocked
+        api_key:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Api Key
+        watch:
+          type: boolean
+          title: Watch
+          description: with an api_key, flag this ask to hear back on a status flip — poll GET /v1/store/my_requests; no email/webhook
+          default: false
+      type: object
+      required:
+      - text
+      title: StoreRequestIn
+    BundleMoveIn:
+      properties:
+        api_key:
+          type: string
+          title: Api Key
+        session_id:
+          type: string
+          title: Session Id
+        issues:
+          items:
+            additionalProperties: true
+            type: object
+          type: array
+          title: Issues
+        their_offers:
+          anyOf:
+          - items:
+              additionalProperties: true
+              type: object
+            type: array
+          - type: 'null'
+          title: Their Offers
+        my_priorities:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: My Priorities
+        my_batna:
+          type: number
+          title: My Batna
+          default: 0.4
+        their_batna_estimate:
+          type: number
+          title: Their Batna Estimate
+          default: 0.4
+        cooperation:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Cooperation
+      type: object
+      required:
+      - api_key
+      - session_id
+      - issues
+      title: BundleMoveIn
+    SessionMoveIn:
+      properties:
+        api_key:
+          type: string
+          title: Api Key
+        session_id:
+          type: string
+          title: Session Id
+        their_offers:
+          items:
+            type: number
+          type: array
+          title: Their Offers
+        my_offers:
+          anyOf:
+          - items:
+              type: number
+            type: array
+          - type: 'null'
+          title: My Offers
+        rounds_left:
+          anyOf:
+          - type: integer
+            minimum: 1.0
+          - type: 'null'
+          title: Rounds Left
+      type: object
+      required:
+      - api_key
+      - session_id
+      - their_offers
+      title: SessionMoveIn
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    SessionOpenIn:
+      properties:
+        api_key:
+          type: string
+          title: Api Key
+        category:
+          type: string
+          title: Category
+          description: resale | supply | retail
+        side:
+          type: string
+          title: Side
+          description: buy | sell
+        walk_away:
+          type: number
+          exclusiveMinimum: 0.0
+          title: Walk Away
+          description: your floor (sell) / ceiling (buy)
+        target:
+          type: number
+          exclusiveMinimum: 0.0
+          title: Target
+          description: your aspiration
+        their_offers:
+          anyOf:
+          - items:
+              type: number
+            type: array
+          - type: 'null'
+          title: Their Offers
+        my_offers:
+          anyOf:
+          - items:
+              type: number
+            type: array
+          - type: 'null'
+          title: My Offers
+        rounds_left:
+          anyOf:
+          - type: integer
+            minimum: 1.0
+          - type: 'null'
+          title: Rounds Left
+        seed:
+          type: integer
+          title: Seed
+          default: 0
+      type: object
+      required:
+      - api_key
+      - category
+      - side
+      - walk_away
+      - target
+      title: SessionOpenIn
+    RotateIn:
+      properties:
+        api_key:
+          type: string
+          title: Api Key
+      type: object
+      required:
+      - api_key
+      title: RotateIn
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+x-refined-from:
+- snhp-dev-openapi.json
+- snhp-dev-openapi.yml
