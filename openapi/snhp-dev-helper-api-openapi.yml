@@ -1,11 +1,8 @@
 openapi: 3.2.0
 info:
-  title: Snhp Dev Helper API
+  title: Game Theory Layer for AI Agents Helper API
+  description: 'Start with ONE tool: POST /v1/negotiate/turn — plain-dollar price negotiation (your walk-away + the other side''s offers in dollars -> the counter to send, a ready-to-send message, accept/walk advice).'
   version: 0.1.0
-  description: 'Operations tagged helper across 2 of this provider''s published API definitions: snhp-dev-openapi.json, snhp-dev-openapi.yml. Each path carries the servers of the definition it was published in.'
-servers:
-- url: https://snhp.dev
-  description: Primary host (also served identically on https://api.snhp.dev, https://www.snhp.dev and https://snhp.fly.dev — the served document declares no servers[]; this block was added by API Evangelist from the provider's llms.txt and agents.json http_base)
 tags:
 - name: Helper
 paths:
@@ -110,31 +107,6 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
-    _HelperOutcomeRequest:
-      properties:
-        receipt:
-          type: string
-          maxLength: 64
-          title: Receipt
-          description: The token returned with an answer.
-        outcome:
-          type: string
-          maxLength: 32
-          title: Outcome
-          description: What the landlord actually did.
-        amount:
-          anyOf:
-          - type: integer
-            maximum: 1000000.0
-            minimum: 0.0
-          - type: 'null'
-          title: Amount
-          description: Roughly how much, if money changed hands. Stored as a band.
-      type: object
-      required:
-      - receipt
-      - outcome
-      title: _HelperOutcomeRequest
     HTTPValidationError:
       properties:
         detail:
@@ -174,6 +146,31 @@ components:
           default: false
       type: object
       title: _HelperAskRequest
+    _HelperOutcomeRequest:
+      properties:
+        receipt:
+          type: string
+          maxLength: 64
+          title: Receipt
+          description: The token returned with an answer.
+        outcome:
+          type: string
+          maxLength: 32
+          title: Outcome
+          description: What the landlord actually did.
+        amount:
+          anyOf:
+          - type: integer
+            maximum: 1000000.0
+            minimum: 0.0
+          - type: 'null'
+          title: Amount
+          description: Roughly how much, if money changed hands. Stored as a band.
+      type: object
+      required:
+      - receipt
+      - outcome
+      title: _HelperOutcomeRequest
     ValidationError:
       properties:
         loc:
@@ -200,6 +197,3 @@ components:
       - msg
       - type
       title: ValidationError
-x-refined-from:
-- snhp-dev-openapi.json
-- snhp-dev-openapi.yml

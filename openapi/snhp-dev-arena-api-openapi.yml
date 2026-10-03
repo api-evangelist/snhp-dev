@@ -1,11 +1,8 @@
 openapi: 3.2.0
 info:
-  title: Snhp Dev Arena API
+  title: SNHP Evolution Arena API
+  description: watch AI negotiators evolve, live
   version: 0.1.0
-  description: 'Operations tagged Arena across 2 of this provider''s published API definitions: snhp-dev-arena-openapi.json, snhp-dev-arena-openapi.yml. Each path carries the servers of the definition it was published in.'
-servers:
-- url: https://arena.snhp.dev
-  description: Arena host (the served document declares no servers[]; added by API Evangelist from the fetch host, which the provider's llms.txt names as arena.snhp.dev)
 tags:
 - name: Arena
 paths:
@@ -206,6 +203,15 @@ paths:
       - Arena
 components:
   schemas:
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
     ChampionReq:
       properties:
         token:
@@ -248,15 +254,6 @@ components:
       - token
       - tactic
       title: ChampionReq
-    HTTPValidationError:
-      properties:
-        detail:
-          items:
-            $ref: '#/components/schemas/ValidationError'
-          type: array
-          title: Detail
-      type: object
-      title: HTTPValidationError
     ValidationError:
       properties:
         loc:
@@ -283,6 +280,3 @@ components:
       - msg
       - type
       title: ValidationError
-x-refined-from:
-- snhp-dev-arena-openapi.json
-- snhp-dev-arena-openapi.yml

@@ -1,11 +1,8 @@
 openapi: 3.2.0
 info:
-  title: Snhp Dev Store API
+  title: Game Theory Layer for AI Agents Store API
+  description: 'Start with ONE tool: POST /v1/negotiate/turn — plain-dollar price negotiation (your walk-away + the other side''s offers in dollars -> the counter to send, a ready-to-send message, accept/walk advice).'
   version: 0.1.0
-  description: 'Operations tagged store across 2 of this provider''s published API definitions: snhp-dev-openapi.json, snhp-dev-openapi.yml. Each path carries the servers of the definition it was published in.'
-servers:
-- url: https://snhp.dev
-  description: Primary host (also served identically on https://api.snhp.dev, https://www.snhp.dev and https://snhp.fly.dev — the served document declares no servers[]; this block was added by API Evangelist from the provider's llms.txt and agents.json http_base)
 tags:
 - name: Store
 paths:
@@ -393,22 +390,6 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
-    FetchIn:
-      properties:
-        api_key:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Api Key
-        url:
-          type: string
-          maxLength: 2048
-          title: Url
-          description: http(s) URL to read → markdown
-      type: object
-      required:
-      - url
-      title: FetchIn
     ParkIn:
       properties:
         api_key:
@@ -430,36 +411,6 @@ components:
       required:
       - blob_b64
       title: ParkIn
-    StoreRequestIn:
-      properties:
-        text:
-          type: string
-          maxLength: 4000
-          title: Text
-          description: what you wish the counter stocked
-        api_key:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Api Key
-        watch:
-          type: boolean
-          title: Watch
-          description: with an api_key, flag this ask to hear back on a status flip — poll GET /v1/store/my_requests; no email/webhook
-          default: false
-      type: object
-      required:
-      - text
-      title: StoreRequestIn
-    HTTPValidationError:
-      properties:
-        detail:
-          items:
-            $ref: '#/components/schemas/ValidationError'
-          type: array
-          title: Detail
-      type: object
-      title: HTTPValidationError
     ValidationError:
       properties:
         loc:
@@ -486,6 +437,49 @@ components:
       - msg
       - type
       title: ValidationError
-x-refined-from:
-- snhp-dev-openapi.json
-- snhp-dev-openapi.yml
+    FetchIn:
+      properties:
+        api_key:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Api Key
+        url:
+          type: string
+          maxLength: 2048
+          title: Url
+          description: http(s) URL to read → markdown
+      type: object
+      required:
+      - url
+      title: FetchIn
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    StoreRequestIn:
+      properties:
+        text:
+          type: string
+          maxLength: 4000
+          title: Text
+          description: what you wish the counter stocked
+        api_key:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Api Key
+        watch:
+          type: boolean
+          title: Watch
+          description: with an api_key, flag this ask to hear back on a status flip — poll GET /v1/store/my_requests; no email/webhook
+          default: false
+      type: object
+      required:
+      - text
+      title: StoreRequestIn

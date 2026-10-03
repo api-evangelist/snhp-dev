@@ -1,11 +1,8 @@
 openapi: 3.2.0
 info:
-  title: Snhp Dev Health API
+  title: SNHP Evolution Arena Health API
+  description: watch AI negotiators evolve, live
   version: 0.1.0
-  description: 'Operations tagged Health across 2 of this provider''s published API definitions: snhp-dev-arena-openapi.json, snhp-dev-arena-openapi.yml. Each path carries the servers of the definition it was published in.'
-servers:
-- url: https://arena.snhp.dev
-  description: Arena host (the served document declares no servers[]; added by API Evangelist from the fetch host, which the provider's llms.txt names as arena.snhp.dev)
 tags:
 - name: Health
 paths:
@@ -24,6 +21,3 @@ paths:
                 title: Response Health Health Get
       tags:
       - Health
-x-refined-from:
-- snhp-dev-arena-openapi.json
-- snhp-dev-arena-openapi.yml

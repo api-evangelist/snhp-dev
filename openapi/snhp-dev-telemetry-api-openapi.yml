@@ -1,11 +1,8 @@
 openapi: 3.2.0
 info:
-  title: Snhp Dev Telemetry API
+  title: Game Theory Layer for AI Agents Telemetry API
+  description: 'Start with ONE tool: POST /v1/negotiate/turn — plain-dollar price negotiation (your walk-away + the other side''s offers in dollars -> the counter to send, a ready-to-send message, accept/walk advice).'
   version: 0.1.0
-  description: 'Operations tagged telemetry across 2 of this provider''s published API definitions: snhp-dev-openapi.json, snhp-dev-openapi.yml. Each path carries the servers of the definition it was published in.'
-servers:
-- url: https://snhp.dev
-  description: Primary host (also served identically on https://api.snhp.dev, https://www.snhp.dev and https://snhp.fly.dev — the served document declares no servers[]; this block was added by API Evangelist from the provider's llms.txt and agents.json http_base)
 tags:
 - name: Telemetry
   description: Opt-in data sharing + GDPR (export/delete)
@@ -65,6 +62,42 @@ paths:
                 $ref: '#/components/schemas/TelemetryExportResponse'
 components:
   schemas:
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    ReportOutcomeResponse:
+      properties:
+        accepted:
+          type: boolean
+          title: Accepted
+          description: False if the recommendation_id doesn't exist, doesn't belong to this key, is in a different ISO week (too late), or has already been reported. Idempotent re-report = no-op.
+      type: object
+      required:
+      - accepted
+      title: ReportOutcomeResponse
     ReportOutcomeRequest:
       properties:
         recommendation_id:
@@ -98,6 +131,15 @@ components:
       - recommendation_id
       - deal_closed
       title: ReportOutcomeRequest
+    TelemetryDeleteResponse:
+      properties:
+        rows_deleted:
+          type: integer
+          title: Rows Deleted
+      type: object
+      required:
+      - rows_deleted
+      title: TelemetryDeleteResponse
     TelemetryExportResponse:
       properties:
         rows:
@@ -109,25 +151,6 @@ components:
       required:
       - rows
       title: TelemetryExportResponse
-    TelemetryDeleteResponse:
-      properties:
-        rows_deleted:
-          type: integer
-          title: Rows Deleted
-      type: object
-      required:
-      - rows_deleted
-      title: TelemetryDeleteResponse
-    ReportOutcomeResponse:
-      properties:
-        accepted:
-          type: boolean
-          title: Accepted
-          description: False if the recommendation_id doesn't exist, doesn't belong to this key, is in a different ISO week (too late), or has already been reported. Idempotent re-report = no-op.
-      type: object
-      required:
-      - accepted
-      title: ReportOutcomeResponse
     TelemetryRecordOut:
       properties:
         recommendation_id:
@@ -175,32 +198,3 @@ components:
           title: Detail
       type: object
       title: HTTPValidationError
-    ValidationError:
-      properties:
-        loc:
-          items:
-            anyOf:
-            - type: string
-            - type: integer
-          type: array
-          title: Location
-        msg:
-          type: string
-          title: Message
-        type:
-          type: string
-          title: Error Type
-        input:
-          title: Input
-        ctx:
-          type: object
-          title: Context
-      type: object
-      required:
-      - loc
-      - msg
-      - type
-      title: ValidationError
-x-refined-from:
-- snhp-dev-openapi.json
-- snhp-dev-openapi.yml

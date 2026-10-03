@@ -1,11 +1,8 @@
 openapi: 3.2.0
 info:
-  title: Snhp Dev Offer API
+  title: Game Theory Layer for AI Agents Offer API
+  description: 'Start with ONE tool: POST /v1/negotiate/turn — plain-dollar price negotiation (your walk-away + the other side''s offers in dollars -> the counter to send, a ready-to-send message, accept/walk advice).'
   version: 0.1.0
-  description: 'Operations tagged offer across 2 of this provider''s published API definitions: snhp-dev-openapi.json, snhp-dev-openapi.yml. Each path carries the servers of the definition it was published in.'
-servers:
-- url: https://snhp.dev
-  description: Primary host (also served identically on https://api.snhp.dev, https://www.snhp.dev and https://snhp.fly.dev — the served document declares no servers[]; this block was added by API Evangelist from the provider's llms.txt and agents.json http_base)
 tags:
 - name: Offer
   description: 'General offer-graph engine: compile / profile / quote a JSON menu spec (discount-only, never above list)'
@@ -87,6 +84,15 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
     MenuSpec:
       properties:
         name:
@@ -129,6 +135,177 @@ components:
         hosted engine takes the exact JSON an agent reads off that page. A body
 
         carrying `dims` is the native spec and passes through untouched.'
+    QuoteOptsSpec:
+      properties:
+        quote_lookers:
+          type: boolean
+          title: Quote Lookers
+          description: False = refuse buyers who'd never pay list (IC floor)
+          default: true
+        min_price_frac:
+          type: number
+          maximum: 1.0
+          minimum: 0.0
+          title: Min Price Frac
+          description: never quote below this fraction of list
+          default: 0.0
+        qty_appetite:
+          type: boolean
+          title: Qty Appetite
+          description: don't upsell a unit the buyer values below its cost
+          default: false
+        seller_weight:
+          type: number
+          maximum: 1.0
+          minimum: 0.0
+          title: Seller Weight
+          description: 0.5 = symmetric Nash; →1 tilts surplus to the seller
+          default: 0.5
+      additionalProperties: false
+      type: object
+      title: QuoteOptsSpec
+      description: The hosted subset of core/engine.QuoteOpts.
+    StateSpec:
+      properties:
+        tick:
+          type: integer
+          minimum: 0.0
+          title: Tick
+          default: 0
+        inventory:
+          additionalProperties:
+            type: number
+          type: object
+          title: Inventory
+          description: option_id -> units on hand (finite stock)
+        capacity:
+          additionalProperties:
+            type: number
+          type: object
+          title: Capacity
+          description: slot_ticks -> units a deferred slot can still absorb
+        expiring:
+          items:
+            type: string
+          type: array
+          maxItems: 128
+          title: Expiring
+          description: option ids currently priced at salvage (batch expiring)
+        expected_demand:
+          additionalProperties:
+            type: number
+          type: object
+          title: Expected Demand
+          description: option_id -> expected rest-of-horizon list-price demand
+      additionalProperties: false
+      type: object
+      title: StateSpec
+      description: 'The shop moment the cost model reads (core/state.ShopState). All
+
+        fields optional — an omitted state is a neutral shop (no inventory
+
+        signals, nothing expiring, unconstrained capacity).'
+    QuoteRequest:
+      properties:
+        spec:
+          $ref: '#/components/schemas/MenuSpec'
+        state:
+          anyOf:
+          - $ref: '#/components/schemas/StateSpec'
+          - type: 'null'
+        buyer:
+          $ref: '#/components/schemas/BuyerSpec'
+        config:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Config
+          description: 'pin dims: dim_id -> option id | [option ids] (addon) | int (quantity). Omit to search every valid cart.'
+        opts:
+          $ref: '#/components/schemas/QuoteOptsSpec'
+      additionalProperties: false
+      type: object
+      required:
+      - spec
+      - buyer
+      title: QuoteRequest
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    DimSpec:
+      properties:
+        id:
+          type: string
+          maxLength: 64
+          minLength: 1
+          title: Id
+        kind:
+          type: string
+          title: Kind
+        options:
+          items:
+            $ref: '#/components/schemas/OptionSpec'
+          type: array
+          maxItems: 12
+          title: Options
+        qty_cap:
+          type: integer
+          maximum: 12.0
+          minimum: 1.0
+          title: Qty Cap
+          default: 1
+        negotiable:
+          anyOf:
+          - type: string
+            enum:
+            - free
+            - lever
+            - auto
+          - type: 'null'
+          title: Negotiable
+      additionalProperties: false
+      type: object
+      required:
+      - id
+      - kind
+      title: DimSpec
+    ProfileRequest:
+      properties:
+        spec:
+          $ref: '#/components/schemas/MenuSpec'
+        state:
+          anyOf:
+          - $ref: '#/components/schemas/StateSpec'
+          - type: 'null'
+      additionalProperties: false
+      type: object
+      required:
+      - spec
+      title: ProfileRequest
     BuyerSpec:
       properties:
         values:
@@ -198,111 +375,6 @@ components:
       additionalProperties: false
       type: object
       title: DepsSpec
-    DimSpec:
-      properties:
-        id:
-          type: string
-          maxLength: 64
-          minLength: 1
-          title: Id
-        kind:
-          type: string
-          title: Kind
-        options:
-          items:
-            $ref: '#/components/schemas/OptionSpec'
-          type: array
-          maxItems: 12
-          title: Options
-        qty_cap:
-          type: integer
-          maximum: 12.0
-          minimum: 1.0
-          title: Qty Cap
-          default: 1
-        negotiable:
-          anyOf:
-          - type: string
-            enum:
-            - free
-            - lever
-            - auto
-          - type: 'null'
-          title: Negotiable
-      additionalProperties: false
-      type: object
-      required:
-      - id
-      - kind
-      title: DimSpec
-    ProfileRequest:
-      properties:
-        spec:
-          $ref: '#/components/schemas/MenuSpec'
-        state:
-          anyOf:
-          - $ref: '#/components/schemas/StateSpec'
-          - type: 'null'
-      additionalProperties: false
-      type: object
-      required:
-      - spec
-      title: ProfileRequest
-    QuoteRequest:
-      properties:
-        spec:
-          $ref: '#/components/schemas/MenuSpec'
-        state:
-          anyOf:
-          - $ref: '#/components/schemas/StateSpec'
-          - type: 'null'
-        buyer:
-          $ref: '#/components/schemas/BuyerSpec'
-        config:
-          anyOf:
-          - additionalProperties: true
-            type: object
-          - type: 'null'
-          title: Config
-          description: 'pin dims: dim_id -> option id | [option ids] (addon) | int (quantity). Omit to search every valid cart.'
-        opts:
-          $ref: '#/components/schemas/QuoteOptsSpec'
-      additionalProperties: false
-      type: object
-      required:
-      - spec
-      - buyer
-      title: QuoteRequest
-    QuoteOptsSpec:
-      properties:
-        quote_lookers:
-          type: boolean
-          title: Quote Lookers
-          description: False = refuse buyers who'd never pay list (IC floor)
-          default: true
-        min_price_frac:
-          type: number
-          maximum: 1.0
-          minimum: 0.0
-          title: Min Price Frac
-          description: never quote below this fraction of list
-          default: 0.0
-        qty_appetite:
-          type: boolean
-          title: Qty Appetite
-          description: don't upsell a unit the buyer values below its cost
-          default: false
-        seller_weight:
-          type: number
-          maximum: 1.0
-          minimum: 0.0
-          title: Seller Weight
-          description: 0.5 = symmetric Nash; →1 tilts surplus to the seller
-          default: 0.5
-      additionalProperties: false
-      type: object
-      title: QuoteOptsSpec
-      description: The hosted subset of core/engine.QuoteOpts.
     OptionSpec:
       properties:
         id:
@@ -357,81 +429,3 @@ components:
       required:
       - id
       title: OptionSpec
-    HTTPValidationError:
-      properties:
-        detail:
-          items:
-            $ref: '#/components/schemas/ValidationError'
-          type: array
-          title: Detail
-      type: object
-      title: HTTPValidationError
-    StateSpec:
-      properties:
-        tick:
-          type: integer
-          minimum: 0.0
-          title: Tick
-          default: 0
-        inventory:
-          additionalProperties:
-            type: number
-          type: object
-          title: Inventory
-          description: option_id -> units on hand (finite stock)
-        capacity:
-          additionalProperties:
-            type: number
-          type: object
-          title: Capacity
-          description: slot_ticks -> units a deferred slot can still absorb
-        expiring:
-          items:
-            type: string
-          type: array
-          maxItems: 128
-          title: Expiring
-          description: option ids currently priced at salvage (batch expiring)
-        expected_demand:
-          additionalProperties:
-            type: number
-          type: object
-          title: Expected Demand
-          description: option_id -> expected rest-of-horizon list-price demand
-      additionalProperties: false
-      type: object
-      title: StateSpec
-      description: 'The shop moment the cost model reads (core/state.ShopState). All
-
-        fields optional — an omitted state is a neutral shop (no inventory
-
-        signals, nothing expiring, unconstrained capacity).'
-    ValidationError:
-      properties:
-        loc:
-          items:
-            anyOf:
-            - type: string
-            - type: integer
-          type: array
-          title: Location
-        msg:
-          type: string
-          title: Message
-        type:
-          type: string
-          title: Error Type
-        input:
-          title: Input
-        ctx:
-          type: object
-          title: Context
-      type: object
-      required:
-      - loc
-      - msg
-      - type
-      title: ValidationError
-x-refined-from:
-- snhp-dev-openapi.json
-- snhp-dev-openapi.yml

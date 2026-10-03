@@ -1,11 +1,8 @@
 openapi: 3.2.0
 info:
-  title: Snhp Dev Rent API
+  title: Game Theory Layer for AI Agents Rent API
+  description: 'Start with ONE tool: POST /v1/negotiate/turn — plain-dollar price negotiation (your walk-away + the other side''s offers in dollars -> the counter to send, a ready-to-send message, accept/walk advice).'
   version: 0.1.0
-  description: 'Operations tagged rent across 2 of this provider''s published API definitions: snhp-dev-openapi.json, snhp-dev-openapi.yml. Each path carries the servers of the definition it was published in.'
-servers:
-- url: https://snhp.dev
-  description: Primary host (also served identically on https://api.snhp.dev, https://www.snhp.dev and https://snhp.fly.dev — the served document declares no servers[]; this block was added by API Evangelist from the provider's llms.txt and agents.json http_base)
 tags:
 - name: rent
 paths:
@@ -62,6 +59,15 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
     _RentCheckRequest:
       properties:
         metro:
@@ -93,15 +99,6 @@ components:
       - offered_rent
       - months_at_address
       title: _RentCheckRequest
-    HTTPValidationError:
-      properties:
-        detail:
-          items:
-            $ref: '#/components/schemas/ValidationError'
-          type: array
-          title: Detail
-      type: object
-      title: HTTPValidationError
     ValidationError:
       properties:
         loc:
@@ -128,6 +125,3 @@ components:
       - msg
       - type
       title: ValidationError
-x-refined-from:
-- snhp-dev-openapi.json
-- snhp-dev-openapi.yml

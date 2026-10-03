@@ -1,11 +1,8 @@
 openapi: 3.2.0
 info:
-  title: Snhp Dev Divorce API
+  title: SNHP Evolution Arena Divorce API
+  description: watch AI negotiators evolve, live
   version: 0.1.0
-  description: 'Operations tagged Divorce across 2 of this provider''s published API definitions: snhp-dev-arena-openapi.json, snhp-dev-arena-openapi.yml. Each path carries the servers of the definition it was published in.'
-servers:
-- url: https://arena.snhp.dev
-  description: Arena host (the served document declares no servers[]; added by API Evangelist from the fetch host, which the provider's llms.txt names as arena.snhp.dev)
 tags:
 - name: Divorce
 paths:
@@ -83,41 +80,6 @@ paths:
       - Divorce
 components:
   schemas:
-    RunRequest:
-      properties:
-        a:
-          $ref: '#/components/schemas/SideSpec'
-        b:
-          $ref: '#/components/schemas/SideSpec'
-        wildcard_label:
-          type: string
-          maxLength: 40
-          title: Wildcard Label
-          default: the sentimental item
-        fronts:
-          items:
-            type: string
-          type: array
-          maxItems: 2
-          title: Fronts
-          default:
-          - dog
-        seed:
-          anyOf:
-          - type: integer
-            maximum: 10000000.0
-            minimum: 1.0
-          - type: 'null'
-          title: Seed
-        rel:
-          type: string
-          title: Rel
-          default: marriage
-      type: object
-      required:
-      - a
-      - b
-      title: RunRequest
     SideSpec:
       properties:
         name:
@@ -164,6 +126,41 @@ components:
           title: Detail
       type: object
       title: HTTPValidationError
+    RunRequest:
+      properties:
+        a:
+          $ref: '#/components/schemas/SideSpec'
+        b:
+          $ref: '#/components/schemas/SideSpec'
+        wildcard_label:
+          type: string
+          maxLength: 40
+          title: Wildcard Label
+          default: the sentimental item
+        fronts:
+          items:
+            type: string
+          type: array
+          maxItems: 2
+          title: Fronts
+          default:
+          - dog
+        seed:
+          anyOf:
+          - type: integer
+            maximum: 10000000.0
+            minimum: 1.0
+          - type: 'null'
+          title: Seed
+        rel:
+          type: string
+          title: Rel
+          default: marriage
+      type: object
+      required:
+      - a
+      - b
+      title: RunRequest
     ValidationError:
       properties:
         loc:
@@ -190,6 +187,3 @@ components:
       - msg
       - type
       title: ValidationError
-x-refined-from:
-- snhp-dev-arena-openapi.json
-- snhp-dev-arena-openapi.yml

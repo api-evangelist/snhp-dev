@@ -1,11 +1,8 @@
 openapi: 3.2.0
 info:
-  title: Snhp Dev Par API
+  title: SNHP Evolution Arena Par API
+  description: watch AI negotiators evolve, live
   version: 0.1.0
-  description: 'Operations tagged Par across 2 of this provider''s published API definitions: snhp-dev-arena-openapi.json, snhp-dev-arena-openapi.yml. Each path carries the servers of the definition it was published in.'
-servers:
-- url: https://arena.snhp.dev
-  description: Arena host (the served document declares no servers[]; added by API Evangelist from the fetch host, which the provider's llms.txt names as arena.snhp.dev)
 tags:
 - name: Par
 paths:
@@ -371,48 +368,6 @@ paths:
       - Par
 components:
   schemas:
-    JoinReq:
-      properties:
-        group:
-          type: string
-          maxLength: 64
-          title: Group
-        user_id:
-          type: string
-          maxLength: 64
-          title: User Id
-        name:
-          anyOf:
-          - type: string
-            maxLength: 40
-          - type: 'null'
-          title: Name
-      type: object
-      required:
-      - group
-      - user_id
-      title: JoinReq
-    EventReq:
-      properties:
-        user_id:
-          type: string
-          maxLength: 64
-          title: User Id
-        name:
-          type: string
-          maxLength: 32
-          title: Name
-        meta:
-          anyOf:
-          - additionalProperties: true
-            type: object
-          - type: 'null'
-          title: Meta
-      type: object
-      required:
-      - user_id
-      - name
-      title: EventReq
     SubmitReq:
       properties:
         day:
@@ -446,20 +401,74 @@ components:
       - day
       - user_id
       title: SubmitReq
-    GradeReq:
+    ValidationError:
       properties:
-        day:
-          type: integer
-          title: Day
-        close:
-          anyOf:
-          - type: number
-          - type: 'null'
-          title: Close
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
       type: object
       required:
-      - day
-      title: GradeReq
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    WaitReq:
+      properties:
+        user_id:
+          type: string
+          maxLength: 64
+          title: User Id
+        scenario:
+          type: string
+          maxLength: 64
+          title: Scenario
+        contact:
+          anyOf:
+          - type: string
+            maxLength: 128
+          - type: 'null'
+          title: Contact
+      type: object
+      required:
+      - user_id
+      - scenario
+      title: WaitReq
+    JoinReq:
+      properties:
+        group:
+          type: string
+          maxLength: 64
+          title: Group
+        user_id:
+          type: string
+          maxLength: 64
+          title: User Id
+        name:
+          anyOf:
+          - type: string
+            maxLength: 40
+          - type: 'null'
+          title: Name
+      type: object
+      required:
+      - group
+      - user_id
+      title: JoinReq
     MoveReq:
       properties:
         day:
@@ -487,27 +496,50 @@ components:
       - your_offers
       - rounds_left
       title: MoveReq
-    WaitReq:
+    EventReq:
       properties:
         user_id:
           type: string
           maxLength: 64
           title: User Id
-        scenario:
+        name:
           type: string
-          maxLength: 64
-          title: Scenario
-        contact:
+          maxLength: 32
+          title: Name
+        meta:
           anyOf:
-          - type: string
-            maxLength: 128
+          - additionalProperties: true
+            type: object
           - type: 'null'
-          title: Contact
+          title: Meta
       type: object
       required:
       - user_id
-      - scenario
-      title: WaitReq
+      - name
+      title: EventReq
+    GradeReq:
+      properties:
+        day:
+          type: integer
+          title: Day
+        close:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Close
+      type: object
+      required:
+      - day
+      title: GradeReq
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
     BundleReq:
       properties:
         issues:
@@ -570,41 +602,3 @@ components:
       - walk_away
       - target
       title: AdviseReq
-    HTTPValidationError:
-      properties:
-        detail:
-          items:
-            $ref: '#/components/schemas/ValidationError'
-          type: array
-          title: Detail
-      type: object
-      title: HTTPValidationError
-    ValidationError:
-      properties:
-        loc:
-          items:
-            anyOf:
-            - type: string
-            - type: integer
-          type: array
-          title: Location
-        msg:
-          type: string
-          title: Message
-        type:
-          type: string
-          title: Error Type
-        input:
-          title: Input
-        ctx:
-          type: object
-          title: Context
-      type: object
-      required:
-      - loc
-      - msg
-      - type
-      title: ValidationError
-x-refined-from:
-- snhp-dev-arena-openapi.json
-- snhp-dev-arena-openapi.yml

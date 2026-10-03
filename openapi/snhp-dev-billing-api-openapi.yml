@@ -1,11 +1,8 @@
 openapi: 3.2.0
 info:
-  title: Snhp Dev Billing API
+  title: Game Theory Layer for AI Agents Billing API
+  description: 'Start with ONE tool: POST /v1/negotiate/turn — plain-dollar price negotiation (your walk-away + the other side''s offers in dollars -> the counter to send, a ready-to-send message, accept/walk advice).'
   version: 0.1.0
-  description: 'Operations tagged billing across 2 of this provider''s published API definitions: snhp-dev-openapi.json, snhp-dev-openapi.yml. Each path carries the servers of the definition it was published in.'
-servers:
-- url: https://snhp.dev
-  description: Primary host (also served identically on https://api.snhp.dev, https://www.snhp.dev and https://snhp.fly.dev — the served document declares no servers[]; this block was added by API Evangelist from the provider's llms.txt and agents.json http_base)
 tags:
 - name: Billing
 paths:
@@ -736,41 +733,38 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
-    AgenticTopupIn:
+    SessionMoveIn:
       properties:
         api_key:
           type: string
           title: Api Key
-        amount_cents:
-          type: integer
-          title: Amount Cents
-          description: cents of wallet credit to buy (min 200); you pay this + the counter fee (5% + 30¢)
-        payment_token:
+        session_id:
           type: string
-          title: Payment Token
-          description: a Stripe Shared Payment Token (spt_…) the agent carries
+          title: Session Id
+        their_offers:
+          items:
+            type: number
+          type: array
+          title: Their Offers
+        my_offers:
+          anyOf:
+          - items:
+              type: number
+            type: array
+          - type: 'null'
+          title: My Offers
+        rounds_left:
+          anyOf:
+          - type: integer
+            minimum: 1.0
+          - type: 'null'
+          title: Rounds Left
       type: object
       required:
       - api_key
-      - amount_cents
-      - payment_token
-      title: AgenticTopupIn
-    FetchIn:
-      properties:
-        api_key:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Api Key
-        url:
-          type: string
-          maxLength: 2048
-          title: Url
-          description: http(s) URL to read → markdown
-      type: object
-      required:
-      - url
-      title: FetchIn
+      - session_id
+      - their_offers
+      title: SessionMoveIn
     ParkIn:
       properties:
         api_key:
@@ -792,6 +786,60 @@ components:
       required:
       - blob_b64
       title: ParkIn
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    RotateIn:
+      properties:
+        api_key:
+          type: string
+          title: Api Key
+      type: object
+      required:
+      - api_key
+      title: RotateIn
+    AgenticTopupIn:
+      properties:
+        api_key:
+          type: string
+          title: Api Key
+        amount_cents:
+          type: integer
+          title: Amount Cents
+          description: cents of wallet credit to buy (min 200); you pay this + the counter fee (5% + 30¢)
+        payment_token:
+          type: string
+          title: Payment Token
+          description: a Stripe Shared Payment Token (spt_…) the agent carries
+      type: object
+      required:
+      - api_key
+      - amount_cents
+      - payment_token
+      title: AgenticTopupIn
     CheckoutIn:
       properties:
         api_key:
@@ -821,6 +869,77 @@ components:
       required:
       - api_key
       title: CheckoutIn
+    SessionOpenIn:
+      properties:
+        api_key:
+          type: string
+          title: Api Key
+        category:
+          type: string
+          title: Category
+          description: resale | supply | retail
+        side:
+          type: string
+          title: Side
+          description: buy | sell
+        walk_away:
+          type: number
+          exclusiveMinimum: 0.0
+          title: Walk Away
+          description: your floor (sell) / ceiling (buy)
+        target:
+          type: number
+          exclusiveMinimum: 0.0
+          title: Target
+          description: your aspiration
+        their_offers:
+          anyOf:
+          - items:
+              type: number
+            type: array
+          - type: 'null'
+          title: Their Offers
+        my_offers:
+          anyOf:
+          - items:
+              type: number
+            type: array
+          - type: 'null'
+          title: My Offers
+        rounds_left:
+          anyOf:
+          - type: integer
+            minimum: 1.0
+          - type: 'null'
+          title: Rounds Left
+        seed:
+          type: integer
+          title: Seed
+          default: 0
+      type: object
+      required:
+      - api_key
+      - category
+      - side
+      - walk_away
+      - target
+      title: SessionOpenIn
+    FetchIn:
+      properties:
+        api_key:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Api Key
+        url:
+          type: string
+          maxLength: 2048
+          title: Url
+          description: http(s) URL to read → markdown
+      type: object
+      required:
+      - url
+      title: FetchIn
     RequestIn:
       properties:
         text:
@@ -842,19 +961,15 @@ components:
       required:
       - text
       title: RequestIn
-    SessionCloseIn:
+    HTTPValidationError:
       properties:
-        api_key:
-          type: string
-          title: Api Key
-        session_id:
-          type: string
-          title: Session Id
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
       type: object
-      required:
-      - api_key
-      - session_id
-      title: SessionCloseIn
+      title: HTTPValidationError
     StoreRequestIn:
       properties:
         text:
@@ -923,7 +1038,7 @@ components:
       - session_id
       - issues
       title: BundleMoveIn
-    SessionMoveIn:
+    SessionCloseIn:
       properties:
         api_key:
           type: string
@@ -931,129 +1046,8 @@ components:
         session_id:
           type: string
           title: Session Id
-        their_offers:
-          items:
-            type: number
-          type: array
-          title: Their Offers
-        my_offers:
-          anyOf:
-          - items:
-              type: number
-            type: array
-          - type: 'null'
-          title: My Offers
-        rounds_left:
-          anyOf:
-          - type: integer
-            minimum: 1.0
-          - type: 'null'
-          title: Rounds Left
       type: object
       required:
       - api_key
       - session_id
-      - their_offers
-      title: SessionMoveIn
-    HTTPValidationError:
-      properties:
-        detail:
-          items:
-            $ref: '#/components/schemas/ValidationError'
-          type: array
-          title: Detail
-      type: object
-      title: HTTPValidationError
-    SessionOpenIn:
-      properties:
-        api_key:
-          type: string
-          title: Api Key
-        category:
-          type: string
-          title: Category
-          description: resale | supply | retail
-        side:
-          type: string
-          title: Side
-          description: buy | sell
-        walk_away:
-          type: number
-          exclusiveMinimum: 0.0
-          title: Walk Away
-          description: your floor (sell) / ceiling (buy)
-        target:
-          type: number
-          exclusiveMinimum: 0.0
-          title: Target
-          description: your aspiration
-        their_offers:
-          anyOf:
-          - items:
-              type: number
-            type: array
-          - type: 'null'
-          title: Their Offers
-        my_offers:
-          anyOf:
-          - items:
-              type: number
-            type: array
-          - type: 'null'
-          title: My Offers
-        rounds_left:
-          anyOf:
-          - type: integer
-            minimum: 1.0
-          - type: 'null'
-          title: Rounds Left
-        seed:
-          type: integer
-          title: Seed
-          default: 0
-      type: object
-      required:
-      - api_key
-      - category
-      - side
-      - walk_away
-      - target
-      title: SessionOpenIn
-    RotateIn:
-      properties:
-        api_key:
-          type: string
-          title: Api Key
-      type: object
-      required:
-      - api_key
-      title: RotateIn
-    ValidationError:
-      properties:
-        loc:
-          items:
-            anyOf:
-            - type: string
-            - type: integer
-          type: array
-          title: Location
-        msg:
-          type: string
-          title: Message
-        type:
-          type: string
-          title: Error Type
-        input:
-          title: Input
-        ctx:
-          type: object
-          title: Context
-      type: object
-      required:
-      - loc
-      - msg
-      - type
-      title: ValidationError
-x-refined-from:
-- snhp-dev-openapi.json
-- snhp-dev-openapi.yml
+      title: SessionCloseIn

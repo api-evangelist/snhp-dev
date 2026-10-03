@@ -1,11 +1,8 @@
 openapi: 3.2.0
 info:
-  title: Snhp Dev Auctions API
+  title: Game Theory Layer for AI Agents Auctions API
+  description: 'Start with ONE tool: POST /v1/negotiate/turn — plain-dollar price negotiation (your walk-away + the other side''s offers in dollars -> the counter to send, a ready-to-send message, accept/walk advice).'
   version: 0.1.0
-  description: 'Operations tagged auctions across 2 of this provider''s published API definitions: snhp-dev-openapi.json, snhp-dev-openapi.yml. Each path carries the servers of the definition it was published in.'
-servers:
-- url: https://snhp.dev
-  description: Primary host (also served identically on https://api.snhp.dev, https://www.snhp.dev and https://snhp.fly.dev — the served document declares no servers[]; this block was added by API Evangelist from the provider's llms.txt and agents.json http_base)
 tags:
 - name: auctions
   description: 'Tier 2: single-unit auctions'
@@ -112,6 +109,29 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
+    FormatRecResponse:
+      properties:
+        recommended_format:
+          type: string
+          title: Recommended Format
+        scores:
+          additionalProperties: true
+          type: object
+          title: Scores
+        expected_revenue_by_format:
+          additionalProperties: true
+          type: object
+          title: Expected Revenue By Format
+        rationale:
+          type: string
+          title: Rationale
+      type: object
+      required:
+      - recommended_format
+      - scores
+      - expected_revenue_by_format
+      - rationale
+      title: FormatRecResponse
     FormatRecRequest:
       properties:
         bidder_value_prior:
@@ -137,50 +157,32 @@ components:
       - n_bidders
       - seller_valuation
       title: FormatRecRequest
-    SimulateResponse:
+    ValidationError:
       properties:
-        mean_revenue:
-          type: number
-          title: Mean Revenue
-        ci_95:
+        loc:
           items:
-            type: number
+            anyOf:
+            - type: string
+            - type: integer
           type: array
-          title: Ci 95
-        efficiency:
-          type: number
-          title: Efficiency
-        winner_index_distribution:
-          items:
-            type: number
-          type: array
-          title: Winner Index Distribution
-        n_simulations:
-          type: integer
-          title: N Simulations
-      type: object
-      required:
-      - mean_revenue
-      - ci_95
-      - efficiency
-      - winner_index_distribution
-      - n_simulations
-      title: SimulateResponse
-    PriorParams:
-      properties:
-        family:
+          title: Location
+        msg:
           type: string
-          title: Family
-          description: lognorm | uniform
-        params:
-          additionalProperties: true
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
           type: object
-          title: Params
+          title: Context
       type: object
       required:
-      - family
-      - params
-      title: PriorParams
+      - loc
+      - msg
+      - type
+      title: ValidationError
     OptimalBidResponse:
       properties:
         optimal_bid:
@@ -210,6 +212,134 @@ components:
       - dominant_strategy
       - rationale
       title: OptimalBidResponse
+    OptimalReserveResponse:
+      properties:
+        reserve_price:
+          type: number
+          title: Reserve Price
+        expected_revenue:
+          type: number
+          title: Expected Revenue
+        expected_revenue_no_reserve:
+          type: number
+          title: Expected Revenue No Reserve
+        expected_efficiency_loss:
+          type: number
+          title: Expected Efficiency Loss
+        rationale:
+          type: string
+          title: Rationale
+      type: object
+      required:
+      - reserve_price
+      - expected_revenue
+      - expected_revenue_no_reserve
+      - expected_efficiency_loss
+      - rationale
+      title: OptimalReserveResponse
+    PriorParams:
+      properties:
+        family:
+          type: string
+          title: Family
+          description: lognorm | uniform
+        params:
+          additionalProperties: true
+          type: object
+          title: Params
+      type: object
+      required:
+      - family
+      - params
+      title: PriorParams
+    SimulateRequest:
+      properties:
+        auction_format:
+          type: string
+          title: Auction Format
+        bidder_priors:
+          items:
+            $ref: '#/components/schemas/PriorParams'
+          type: array
+          title: Bidder Priors
+        reserve_price:
+          type: number
+          minimum: 0.0
+          title: Reserve Price
+        n_simulations:
+          type: integer
+          maximum: 100000.0
+          minimum: 100.0
+          title: N Simulations
+          default: 10000
+        seed:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Seed
+      type: object
+      required:
+      - auction_format
+      - bidder_priors
+      - reserve_price
+      title: SimulateRequest
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    SimulateResponse:
+      properties:
+        mean_revenue:
+          type: number
+          title: Mean Revenue
+        ci_95:
+          items:
+            type: number
+          type: array
+          title: Ci 95
+        efficiency:
+          type: number
+          title: Efficiency
+        winner_index_distribution:
+          items:
+            type: number
+          type: array
+          title: Winner Index Distribution
+        n_simulations:
+          type: integer
+          title: N Simulations
+      type: object
+      required:
+      - mean_revenue
+      - ci_95
+      - efficiency
+      - winner_index_distribution
+      - n_simulations
+      title: SimulateResponse
+    OptimalReserveRequest:
+      properties:
+        bidder_value_prior:
+          $ref: '#/components/schemas/PriorParams'
+        n_bidders:
+          type: integer
+          maximum: 100.0
+          minimum: 1.0
+          title: N Bidders
+        seller_valuation:
+          type: number
+          minimum: 0.0
+          title: Seller Valuation
+      type: object
+      required:
+      - bidder_value_prior
+      - n_bidders
+      - seller_valuation
+      title: OptimalReserveRequest
     OptimalBidRequest:
       properties:
         share_outcome:
@@ -269,139 +399,3 @@ components:
       - n_competing_bidders
       - competitor_value_prior
       title: OptimalBidRequest
-    SimulateRequest:
-      properties:
-        auction_format:
-          type: string
-          title: Auction Format
-        bidder_priors:
-          items:
-            $ref: '#/components/schemas/PriorParams'
-          type: array
-          title: Bidder Priors
-        reserve_price:
-          type: number
-          minimum: 0.0
-          title: Reserve Price
-        n_simulations:
-          type: integer
-          maximum: 100000.0
-          minimum: 100.0
-          title: N Simulations
-          default: 10000
-        seed:
-          anyOf:
-          - type: integer
-          - type: 'null'
-          title: Seed
-      type: object
-      required:
-      - auction_format
-      - bidder_priors
-      - reserve_price
-      title: SimulateRequest
-    FormatRecResponse:
-      properties:
-        recommended_format:
-          type: string
-          title: Recommended Format
-        scores:
-          additionalProperties: true
-          type: object
-          title: Scores
-        expected_revenue_by_format:
-          additionalProperties: true
-          type: object
-          title: Expected Revenue By Format
-        rationale:
-          type: string
-          title: Rationale
-      type: object
-      required:
-      - recommended_format
-      - scores
-      - expected_revenue_by_format
-      - rationale
-      title: FormatRecResponse
-    HTTPValidationError:
-      properties:
-        detail:
-          items:
-            $ref: '#/components/schemas/ValidationError'
-          type: array
-          title: Detail
-      type: object
-      title: HTTPValidationError
-    OptimalReserveRequest:
-      properties:
-        bidder_value_prior:
-          $ref: '#/components/schemas/PriorParams'
-        n_bidders:
-          type: integer
-          maximum: 100.0
-          minimum: 1.0
-          title: N Bidders
-        seller_valuation:
-          type: number
-          minimum: 0.0
-          title: Seller Valuation
-      type: object
-      required:
-      - bidder_value_prior
-      - n_bidders
-      - seller_valuation
-      title: OptimalReserveRequest
-    OptimalReserveResponse:
-      properties:
-        reserve_price:
-          type: number
-          title: Reserve Price
-        expected_revenue:
-          type: number
-          title: Expected Revenue
-        expected_revenue_no_reserve:
-          type: number
-          title: Expected Revenue No Reserve
-        expected_efficiency_loss:
-          type: number
-          title: Expected Efficiency Loss
-        rationale:
-          type: string
-          title: Rationale
-      type: object
-      required:
-      - reserve_price
-      - expected_revenue
-      - expected_revenue_no_reserve
-      - expected_efficiency_loss
-      - rationale
-      title: OptimalReserveResponse
-    ValidationError:
-      properties:
-        loc:
-          items:
-            anyOf:
-            - type: string
-            - type: integer
-          type: array
-          title: Location
-        msg:
-          type: string
-          title: Message
-        type:
-          type: string
-          title: Error Type
-        input:
-          title: Input
-        ctx:
-          type: object
-          title: Context
-      type: object
-      required:
-      - loc
-      - msg
-      - type
-      title: ValidationError
-x-refined-from:
-- snhp-dev-openapi.json
-- snhp-dev-openapi.yml
