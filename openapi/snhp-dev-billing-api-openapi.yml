@@ -733,6 +733,101 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
+    AgenticTopupIn:
+      properties:
+        api_key:
+          type: string
+          title: Api Key
+        amount_cents:
+          type: integer
+          title: Amount Cents
+          description: cents of wallet credit to buy (min 200); you pay this + the counter fee (5% + 30¢)
+        payment_token:
+          type: string
+          title: Payment Token
+          description: a Stripe Shared Payment Token (spt_…) the agent carries
+      type: object
+      required:
+      - api_key
+      - amount_cents
+      - payment_token
+      title: AgenticTopupIn
+    BundleMoveIn:
+      properties:
+        api_key:
+          type: string
+          title: Api Key
+        session_id:
+          type: string
+          title: Session Id
+        issues:
+          items:
+            additionalProperties: true
+            type: object
+          type: array
+          title: Issues
+        their_offers:
+          anyOf:
+          - items:
+              additionalProperties: true
+              type: object
+            type: array
+          - type: 'null'
+          title: Their Offers
+        my_priorities:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: My Priorities
+        my_batna:
+          type: number
+          title: My Batna
+          default: 0.4
+        their_batna_estimate:
+          type: number
+          title: Their Batna Estimate
+          default: 0.4
+        cooperation:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Cooperation
+      type: object
+      required:
+      - api_key
+      - session_id
+      - issues
+      title: BundleMoveIn
+    CheckoutIn:
+      properties:
+        api_key:
+          type: string
+          title: Api Key
+        pack:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Pack
+          description: small ($10.80) | medium ($52.80) | large ($210.30)
+        amount_cents:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Amount Cents
+          description: 'custom top-up: cents of wallet credit (min 200); you pay this + the counter fee (5% + 30¢)'
+        success_url:
+          type: string
+          title: Success Url
+          default: https://snhp.dev/paid
+        cancel_url:
+          type: string
+          title: Cancel Url
+          default: https://snhp.dev/cancel
+      type: object
+      required:
+      - api_key
+      title: CheckoutIn
     SessionMoveIn:
       properties:
         api_key:
@@ -765,27 +860,70 @@ components:
       - session_id
       - their_offers
       title: SessionMoveIn
-    ParkIn:
+    SessionCloseIn:
       properties:
+        api_key:
+          type: string
+          title: Api Key
+        session_id:
+          type: string
+          title: Session Id
+      type: object
+      required:
+      - api_key
+      - session_id
+      title: SessionCloseIn
+    StoreRequestIn:
+      properties:
+        text:
+          type: string
+          maxLength: 4000
+          title: Text
+          description: what you wish the counter stocked
         api_key:
           anyOf:
           - type: string
           - type: 'null'
           title: Api Key
-        blob_b64:
-          type: string
-          title: Blob B64
-          description: your ciphertext as base64 — ENCRYPT BEFORE PARKING; the store holds only opaque bytes and cannot read them
-        ttl_seconds:
-          anyOf:
-          - type: integer
-          - type: 'null'
-          title: Ttl Seconds
-          description: requested lifetime; clamped to [60s, 7d]. The effective expires_at is returned — never a silent surprise.
+        watch:
+          type: boolean
+          title: Watch
+          description: with an api_key, flag this ask to hear back on a status flip — poll GET /v1/store/my_requests; no email/webhook
+          default: false
       type: object
       required:
-      - blob_b64
-      title: ParkIn
+      - text
+      title: StoreRequestIn
+    RequestIn:
+      properties:
+        text:
+          type: string
+          maxLength: 4000
+          title: Text
+          description: what you wish the machine stocked
+        api_key:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Api Key
+        watch:
+          type: boolean
+          title: Watch
+          description: with an api_key, flag this ask to hear back on a status flip — poll GET /v1/store/my_requests; no email/webhook
+          default: false
+      type: object
+      required:
+      - text
+      title: RequestIn
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
     ValidationError:
       properties:
         loc:
@@ -821,54 +959,43 @@ components:
       required:
       - api_key
       title: RotateIn
-    AgenticTopupIn:
+    ParkIn:
       properties:
         api_key:
-          type: string
-          title: Api Key
-        amount_cents:
-          type: integer
-          title: Amount Cents
-          description: cents of wallet credit to buy (min 200); you pay this + the counter fee (5% + 30¢)
-        payment_token:
-          type: string
-          title: Payment Token
-          description: a Stripe Shared Payment Token (spt_…) the agent carries
-      type: object
-      required:
-      - api_key
-      - amount_cents
-      - payment_token
-      title: AgenticTopupIn
-    CheckoutIn:
-      properties:
-        api_key:
-          type: string
-          title: Api Key
-        pack:
           anyOf:
           - type: string
           - type: 'null'
-          title: Pack
-          description: small ($10.80) | medium ($52.80) | large ($210.30)
-        amount_cents:
+          title: Api Key
+        blob_b64:
+          type: string
+          title: Blob B64
+          description: your ciphertext as base64 — ENCRYPT BEFORE PARKING; the store holds only opaque bytes and cannot read them
+        ttl_seconds:
           anyOf:
           - type: integer
           - type: 'null'
-          title: Amount Cents
-          description: 'custom top-up: cents of wallet credit (min 200); you pay this + the counter fee (5% + 30¢)'
-        success_url:
-          type: string
-          title: Success Url
-          default: https://snhp.dev/paid
-        cancel_url:
-          type: string
-          title: Cancel Url
-          default: https://snhp.dev/cancel
+          title: Ttl Seconds
+          description: requested lifetime; clamped to [60s, 7d]. The effective expires_at is returned — never a silent surprise.
       type: object
       required:
-      - api_key
-      title: CheckoutIn
+      - blob_b64
+      title: ParkIn
+    FetchIn:
+      properties:
+        api_key:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Api Key
+        url:
+          type: string
+          maxLength: 2048
+          title: Url
+          description: http(s) URL to read → markdown
+      type: object
+      required:
+      - url
+      title: FetchIn
     SessionOpenIn:
       properties:
         api_key:
@@ -924,130 +1051,3 @@ components:
       - walk_away
       - target
       title: SessionOpenIn
-    FetchIn:
-      properties:
-        api_key:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Api Key
-        url:
-          type: string
-          maxLength: 2048
-          title: Url
-          description: http(s) URL to read → markdown
-      type: object
-      required:
-      - url
-      title: FetchIn
-    RequestIn:
-      properties:
-        text:
-          type: string
-          maxLength: 4000
-          title: Text
-          description: what you wish the machine stocked
-        api_key:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Api Key
-        watch:
-          type: boolean
-          title: Watch
-          description: with an api_key, flag this ask to hear back on a status flip — poll GET /v1/store/my_requests; no email/webhook
-          default: false
-      type: object
-      required:
-      - text
-      title: RequestIn
-    HTTPValidationError:
-      properties:
-        detail:
-          items:
-            $ref: '#/components/schemas/ValidationError'
-          type: array
-          title: Detail
-      type: object
-      title: HTTPValidationError
-    StoreRequestIn:
-      properties:
-        text:
-          type: string
-          maxLength: 4000
-          title: Text
-          description: what you wish the counter stocked
-        api_key:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Api Key
-        watch:
-          type: boolean
-          title: Watch
-          description: with an api_key, flag this ask to hear back on a status flip — poll GET /v1/store/my_requests; no email/webhook
-          default: false
-      type: object
-      required:
-      - text
-      title: StoreRequestIn
-    BundleMoveIn:
-      properties:
-        api_key:
-          type: string
-          title: Api Key
-        session_id:
-          type: string
-          title: Session Id
-        issues:
-          items:
-            additionalProperties: true
-            type: object
-          type: array
-          title: Issues
-        their_offers:
-          anyOf:
-          - items:
-              additionalProperties: true
-              type: object
-            type: array
-          - type: 'null'
-          title: Their Offers
-        my_priorities:
-          anyOf:
-          - additionalProperties: true
-            type: object
-          - type: 'null'
-          title: My Priorities
-        my_batna:
-          type: number
-          title: My Batna
-          default: 0.4
-        their_batna_estimate:
-          type: number
-          title: Their Batna Estimate
-          default: 0.4
-        cooperation:
-          anyOf:
-          - type: number
-          - type: 'null'
-          title: Cooperation
-      type: object
-      required:
-      - api_key
-      - session_id
-      - issues
-      title: BundleMoveIn
-    SessionCloseIn:
-      properties:
-        api_key:
-          type: string
-          title: Api Key
-        session_id:
-          type: string
-          title: Session Id
-      type: object
-      required:
-      - api_key
-      - session_id
-      title: SessionCloseIn

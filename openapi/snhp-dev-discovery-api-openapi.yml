@@ -392,121 +392,14 @@ paths:
               schema: {}
 components:
   schemas:
-    ValidationError:
+    VerifyDomainRequest:
       properties:
-        loc:
-          items:
-            anyOf:
-            - type: string
-            - type: integer
-          type: array
-          title: Location
-        msg:
+        domain:
           type: string
-          title: Message
-        type:
-          type: string
-          title: Error Type
-        input:
-          title: Input
-        ctx:
-          type: object
-          title: Context
-      type: object
-      required:
-      - loc
-      - msg
-      - type
-      title: ValidationError
-    IssueKeyRequest:
-      properties:
-        agent_id:
-          type: string
-          maxLength: 128
-          minLength: 3
-          title: Agent Id
-          description: Stable identifier for the calling agent
-        contact_email:
-          type: string
-          title: Contact Email
-          description: Contact email for issues / overage notifications
-        intended_use_summary:
-          type: string
-          maxLength: 1024
-          minLength: 8
-          title: Intended Use Summary
-          description: One-sentence description of the intended use case
-        telemetry_consent:
-          type: boolean
-          title: Telemetry Consent
-          description: Opt-in to contribute anonymized recommendation→outcome pairs to the prior corpus. Default False. Set at issuance and immutable afterwards (revocation = /v1/telemetry/delete + don't pass share_outcome=True). See /llms.txt for the privacy contract.
-          default: false
-      type: object
-      required:
-      - agent_id
-      - contact_email
-      - intended_use_summary
-      title: IssueKeyRequest
-    WalletSummary:
-      properties:
-        starter_millicents:
-          type: integer
-          title: Starter Millicents
-          description: The one-time 50¢ starter grant (millicents, 1000/cent)
-        funded_millicents:
-          type: integer
-          title: Funded Millicents
-          description: Own-money top-ups, in millicents
-        total_millicents:
-          type: integer
-          title: Total Millicents
-          description: Spendable total across both buckets
-      type: object
-      required:
-      - starter_millicents
-      - funded_millicents
-      - total_millicents
-      title: WalletSummary
-    RotateIn:
-      properties:
-        api_key:
-          type: string
-          title: Api Key
-      type: object
-      required:
-      - api_key
-      title: RotateIn
-    RequestIn:
-      properties:
-        text:
-          type: string
-          maxLength: 4000
-          title: Text
-          description: what you wish the machine stocked
-        api_key:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Api Key
-        watch:
-          type: boolean
-          title: Watch
-          description: with an api_key, flag this ask to hear back on a status flip — poll GET /v1/store/my_requests; no email/webhook
-          default: false
-      type: object
-      required:
-      - text
-      title: RequestIn
-    RegisterOperatorRequest:
-      properties:
-        operator_id:
-          type: string
-          title: Operator Id
-          description: Stable operator identity (e.g. a domain or org id)
+          title: Domain
         public_key_b64:
           type: string
           title: Public Key B64
-          description: Base64 of the 32-byte Ed25519 operator public key
         display_name:
           anyOf:
           - type: string
@@ -514,18 +407,9 @@ components:
           title: Display Name
       type: object
       required:
-      - operator_id
+      - domain
       - public_key_b64
-      title: RegisterOperatorRequest
-    HTTPValidationError:
-      properties:
-        detail:
-          items:
-            $ref: '#/components/schemas/ValidationError'
-          type: array
-          title: Detail
-      type: object
-      title: HTTPValidationError
+      title: VerifyDomainRequest
     IssueKeyResponse:
       properties:
         api_key:
@@ -562,14 +446,66 @@ components:
       - telemetry_consent
       - reused
       title: IssueKeyResponse
-    VerifyDomainRequest:
+    RequestIn:
       properties:
-        domain:
+        text:
           type: string
-          title: Domain
+          maxLength: 4000
+          title: Text
+          description: what you wish the machine stocked
+        api_key:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Api Key
+        watch:
+          type: boolean
+          title: Watch
+          description: with an api_key, flag this ask to hear back on a status flip — poll GET /v1/store/my_requests; no email/webhook
+          default: false
+      type: object
+      required:
+      - text
+      title: RequestIn
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    WalletSummary:
+      properties:
+        starter_millicents:
+          type: integer
+          title: Starter Millicents
+          description: The one-time 50¢ starter grant (millicents, 1000/cent)
+        funded_millicents:
+          type: integer
+          title: Funded Millicents
+          description: Own-money top-ups, in millicents
+        total_millicents:
+          type: integer
+          title: Total Millicents
+          description: Spendable total across both buckets
+      type: object
+      required:
+      - starter_millicents
+      - funded_millicents
+      - total_millicents
+      title: WalletSummary
+    RegisterOperatorRequest:
+      properties:
+        operator_id:
+          type: string
+          title: Operator Id
+          description: Stable operator identity (e.g. a domain or org id)
         public_key_b64:
           type: string
           title: Public Key B64
+          description: Base64 of the 32-byte Ed25519 operator public key
         display_name:
           anyOf:
           - type: string
@@ -577,9 +513,35 @@ components:
           title: Display Name
       type: object
       required:
-      - domain
+      - operator_id
       - public_key_b64
-      title: VerifyDomainRequest
+      title: RegisterOperatorRequest
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
     DomainChallengeRequest:
       properties:
         domain:
@@ -594,3 +556,41 @@ components:
       - domain
       - public_key_b64
       title: DomainChallengeRequest
+    RotateIn:
+      properties:
+        api_key:
+          type: string
+          title: Api Key
+      type: object
+      required:
+      - api_key
+      title: RotateIn
+    IssueKeyRequest:
+      properties:
+        agent_id:
+          type: string
+          maxLength: 128
+          minLength: 3
+          title: Agent Id
+          description: Stable identifier for the calling agent
+        contact_email:
+          type: string
+          title: Contact Email
+          description: Contact email for issues / overage notifications
+        intended_use_summary:
+          type: string
+          maxLength: 1024
+          minLength: 8
+          title: Intended Use Summary
+          description: One-sentence description of the intended use case
+        telemetry_consent:
+          type: boolean
+          title: Telemetry Consent
+          description: Opt-in to contribute anonymized recommendation→outcome pairs to the prior corpus. Default False. Set at issuance and immutable afterwards (revocation = /v1/telemetry/delete + don't pass share_outcome=True). See /llms.txt for the privacy contract.
+          default: false
+      type: object
+      required:
+      - agent_id
+      - contact_email
+      - intended_use_summary
+      title: IssueKeyRequest

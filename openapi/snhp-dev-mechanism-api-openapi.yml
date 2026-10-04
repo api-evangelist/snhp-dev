@@ -87,32 +87,189 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
-    ValidationError:
+    PostedPriceResponse:
       properties:
-        loc:
+        static_price:
+          type: number
+          title: Static Price
+        static_expected_revenue:
+          type: number
+          title: Static Expected Revenue
+        static_simulated_revenue:
+          type: number
+          title: Static Simulated Revenue
+        dynamic_schedule:
           items:
-            anyOf:
-            - type: string
-            - type: integer
+            additionalProperties: true
+            type: object
           type: array
-          title: Location
-        msg:
+          title: Dynamic Schedule
+        dynamic_value_estimate:
+          type: number
+          title: Dynamic Value Estimate
+        sellthrough_rate:
+          type: number
+          title: Sellthrough Rate
+        rationale:
           type: string
-          title: Message
-        type:
-          type: string
-          title: Error Type
-        input:
-          title: Input
-        ctx:
-          type: object
-          title: Context
+          title: Rationale
       type: object
       required:
-      - loc
-      - msg
-      - type
-      title: ValidationError
+      - static_price
+      - static_expected_revenue
+      - static_simulated_revenue
+      - dynamic_schedule
+      - dynamic_value_estimate
+      - sellthrough_rate
+      - rationale
+      title: PostedPriceResponse
+    OptimalAuctionDesignRequest:
+      properties:
+        share_outcome:
+          type: boolean
+          title: Share Outcome
+          description: 'Opt-in: contribute this (anonymized) call to the prior corpus. Default False. Requires account-level consent set at /v1/keys issuance.'
+          default: false
+        vertical:
+          anyOf:
+          - type: string
+            enum:
+            - ad_inventory
+            - saas_procurement
+            - cloud_compute
+            - freight_logistics
+            - media_licensing
+            - m_and_a_buyside
+            - m_and_a_sellside
+            - real_estate
+            - energy_trading
+            - professional_services
+            - marketplace_b2b
+            - other
+          - type: 'null'
+          title: Vertical
+          description: Self-declared vertical (allowlisted enum). Required when share_outcome=True. Use 'other' if none fit.
+        bidder_priors:
+          items:
+            $ref: '#/components/schemas/PriorParams'
+          type: array
+          maxItems: 50
+          minItems: 1
+          title: Bidder Priors
+        seller_valuation:
+          type: number
+          minimum: 0.0
+          title: Seller Valuation
+        objective:
+          type: string
+          enum:
+          - revenue
+          - welfare
+          title: Objective
+          default: revenue
+        n_simulations:
+          type: integer
+          maximum: 50000.0
+          minimum: 500.0
+          title: N Simulations
+          default: 5000
+        seed:
+          type: integer
+          title: Seed
+          default: 42
+      type: object
+      required:
+      - bidder_priors
+      - seller_valuation
+      title: OptimalAuctionDesignRequest
+    GaleShapleyResponse:
+      properties:
+        matching:
+          additionalProperties: true
+          type: object
+          title: Matching
+        unmatched_proposers:
+          items:
+            type: string
+          type: array
+          title: Unmatched Proposers
+        blocking_pairs:
+          items:
+            items:
+              type: string
+            type: array
+          type: array
+          title: Blocking Pairs
+        n_proposals:
+          type: integer
+          title: N Proposals
+      type: object
+      required:
+      - matching
+      - unmatched_proposers
+      - blocking_pairs
+      - n_proposals
+      title: GaleShapleyResponse
+    PriorParams:
+      properties:
+        family:
+          type: string
+          title: Family
+          description: lognorm | uniform
+        params:
+          additionalProperties: true
+          type: object
+          title: Params
+      type: object
+      required:
+      - family
+      - params
+      title: PriorParams
+    Receiver:
+      properties:
+        id:
+          type: string
+          maxLength: 128
+          minLength: 1
+          title: Id
+        preferences:
+          items:
+            type: string
+          type: array
+          maxItems: 1024
+          title: Preferences
+          description: Proposer ids ranked most-preferred first
+        capacity:
+          type: integer
+          maximum: 1024.0
+          minimum: 1.0
+          title: Capacity
+          default: 1
+      type: object
+      required:
+      - id
+      title: Receiver
+    GaleShapleyRequest:
+      properties:
+        proposers:
+          items:
+            $ref: '#/components/schemas/Proposer'
+          type: array
+          maxItems: 1024
+          minItems: 1
+          title: Proposers
+        receivers:
+          items:
+            $ref: '#/components/schemas/Receiver'
+          type: array
+          maxItems: 1024
+          minItems: 1
+          title: Receivers
+      type: object
+      required:
+      - proposers
+      - receivers
+      title: GaleShapleyRequest
     PostedPriceRequest:
       properties:
         share_outcome:
@@ -173,99 +330,6 @@ components:
       - inventory
       - horizon_seconds
       title: PostedPriceRequest
-    PostedPriceResponse:
-      properties:
-        static_price:
-          type: number
-          title: Static Price
-        static_expected_revenue:
-          type: number
-          title: Static Expected Revenue
-        static_simulated_revenue:
-          type: number
-          title: Static Simulated Revenue
-        dynamic_schedule:
-          items:
-            additionalProperties: true
-            type: object
-          type: array
-          title: Dynamic Schedule
-        dynamic_value_estimate:
-          type: number
-          title: Dynamic Value Estimate
-        sellthrough_rate:
-          type: number
-          title: Sellthrough Rate
-        rationale:
-          type: string
-          title: Rationale
-      type: object
-      required:
-      - static_price
-      - static_expected_revenue
-      - static_simulated_revenue
-      - dynamic_schedule
-      - dynamic_value_estimate
-      - sellthrough_rate
-      - rationale
-      title: PostedPriceResponse
-    Proposer:
-      properties:
-        id:
-          type: string
-          maxLength: 128
-          minLength: 1
-          title: Id
-        preferences:
-          items:
-            type: string
-          type: array
-          maxItems: 1024
-          title: Preferences
-          description: Receiver ids ranked most-preferred first
-      type: object
-      required:
-      - id
-      title: Proposer
-    Receiver:
-      properties:
-        id:
-          type: string
-          maxLength: 128
-          minLength: 1
-          title: Id
-        preferences:
-          items:
-            type: string
-          type: array
-          maxItems: 1024
-          title: Preferences
-          description: Proposer ids ranked most-preferred first
-        capacity:
-          type: integer
-          maximum: 1024.0
-          minimum: 1.0
-          title: Capacity
-          default: 1
-      type: object
-      required:
-      - id
-      title: Receiver
-    PriorParams:
-      properties:
-        family:
-          type: string
-          title: Family
-          description: lognorm | uniform
-        params:
-          additionalProperties: true
-          type: object
-          title: Params
-      type: object
-      required:
-      - family
-      - params
-      title: PriorParams
     OptimalAuctionDesignResponse:
       properties:
         mechanism:
@@ -305,111 +369,47 @@ components:
           title: Detail
       type: object
       title: HTTPValidationError
-    OptimalAuctionDesignRequest:
+    ValidationError:
       properties:
-        share_outcome:
-          type: boolean
-          title: Share Outcome
-          description: 'Opt-in: contribute this (anonymized) call to the prior corpus. Default False. Requires account-level consent set at /v1/keys issuance.'
-          default: false
-        vertical:
-          anyOf:
-          - type: string
-            enum:
-            - ad_inventory
-            - saas_procurement
-            - cloud_compute
-            - freight_logistics
-            - media_licensing
-            - m_and_a_buyside
-            - m_and_a_sellside
-            - real_estate
-            - energy_trading
-            - professional_services
-            - marketplace_b2b
-            - other
-          - type: 'null'
-          title: Vertical
-          description: Self-declared vertical (allowlisted enum). Required when share_outcome=True. Use 'other' if none fit.
-        bidder_priors:
+        loc:
           items:
-            $ref: '#/components/schemas/PriorParams'
+            anyOf:
+            - type: string
+            - type: integer
           type: array
-          maxItems: 50
-          minItems: 1
-          title: Bidder Priors
-        seller_valuation:
-          type: number
-          minimum: 0.0
-          title: Seller Valuation
-        objective:
+          title: Location
+        msg:
           type: string
-          enum:
-          - revenue
-          - welfare
-          title: Objective
-          default: revenue
-        n_simulations:
-          type: integer
-          maximum: 50000.0
-          minimum: 500.0
-          title: N Simulations
-          default: 5000
-        seed:
-          type: integer
-          title: Seed
-          default: 42
-      type: object
-      required:
-      - bidder_priors
-      - seller_valuation
-      title: OptimalAuctionDesignRequest
-    GaleShapleyRequest:
-      properties:
-        proposers:
-          items:
-            $ref: '#/components/schemas/Proposer'
-          type: array
-          maxItems: 1024
-          minItems: 1
-          title: Proposers
-        receivers:
-          items:
-            $ref: '#/components/schemas/Receiver'
-          type: array
-          maxItems: 1024
-          minItems: 1
-          title: Receivers
-      type: object
-      required:
-      - proposers
-      - receivers
-      title: GaleShapleyRequest
-    GaleShapleyResponse:
-      properties:
-        matching:
-          additionalProperties: true
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
           type: object
-          title: Matching
-        unmatched_proposers:
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    Proposer:
+      properties:
+        id:
+          type: string
+          maxLength: 128
+          minLength: 1
+          title: Id
+        preferences:
           items:
             type: string
           type: array
-          title: Unmatched Proposers
-        blocking_pairs:
-          items:
-            items:
-              type: string
-            type: array
-          type: array
-          title: Blocking Pairs
-        n_proposals:
-          type: integer
-          title: N Proposals
+          maxItems: 1024
+          title: Preferences
+          description: Receiver ids ranked most-preferred first
       type: object
       required:
-      - matching
-      - unmatched_proposers
-      - blocking_pairs
-      - n_proposals
-      title: GaleShapleyResponse
+      - id
+      title: Proposer

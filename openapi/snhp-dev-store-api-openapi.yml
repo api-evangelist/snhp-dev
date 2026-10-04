@@ -390,27 +390,36 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
-    ParkIn:
+    StoreRequestIn:
       properties:
+        text:
+          type: string
+          maxLength: 4000
+          title: Text
+          description: what you wish the counter stocked
         api_key:
           anyOf:
           - type: string
           - type: 'null'
           title: Api Key
-        blob_b64:
-          type: string
-          title: Blob B64
-          description: your ciphertext as base64 — ENCRYPT BEFORE PARKING; the store holds only opaque bytes and cannot read them
-        ttl_seconds:
-          anyOf:
-          - type: integer
-          - type: 'null'
-          title: Ttl Seconds
-          description: requested lifetime; clamped to [60s, 7d]. The effective expires_at is returned — never a silent surprise.
+        watch:
+          type: boolean
+          title: Watch
+          description: with an api_key, flag this ask to hear back on a status flip — poll GET /v1/store/my_requests; no email/webhook
+          default: false
       type: object
       required:
-      - blob_b64
-      title: ParkIn
+      - text
+      title: StoreRequestIn
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
     ValidationError:
       properties:
         loc:
@@ -437,6 +446,27 @@ components:
       - msg
       - type
       title: ValidationError
+    ParkIn:
+      properties:
+        api_key:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Api Key
+        blob_b64:
+          type: string
+          title: Blob B64
+          description: your ciphertext as base64 — ENCRYPT BEFORE PARKING; the store holds only opaque bytes and cannot read them
+        ttl_seconds:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Ttl Seconds
+          description: requested lifetime; clamped to [60s, 7d]. The effective expires_at is returned — never a silent surprise.
+      type: object
+      required:
+      - blob_b64
+      title: ParkIn
     FetchIn:
       properties:
         api_key:
@@ -453,33 +483,3 @@ components:
       required:
       - url
       title: FetchIn
-    HTTPValidationError:
-      properties:
-        detail:
-          items:
-            $ref: '#/components/schemas/ValidationError'
-          type: array
-          title: Detail
-      type: object
-      title: HTTPValidationError
-    StoreRequestIn:
-      properties:
-        text:
-          type: string
-          maxLength: 4000
-          title: Text
-          description: what you wish the counter stocked
-        api_key:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Api Key
-        watch:
-          type: boolean
-          title: Watch
-          description: with an api_key, flag this ask to hear back on a status flip — poll GET /v1/store/my_requests; no email/webhook
-          default: false
-      type: object
-      required:
-      - text
-      title: StoreRequestIn

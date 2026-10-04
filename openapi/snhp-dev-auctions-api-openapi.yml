@@ -109,29 +109,37 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
-    FormatRecResponse:
+    SimulateRequest:
       properties:
-        recommended_format:
+        auction_format:
           type: string
-          title: Recommended Format
-        scores:
-          additionalProperties: true
-          type: object
-          title: Scores
-        expected_revenue_by_format:
-          additionalProperties: true
-          type: object
-          title: Expected Revenue By Format
-        rationale:
-          type: string
-          title: Rationale
+          title: Auction Format
+        bidder_priors:
+          items:
+            $ref: '#/components/schemas/PriorParams'
+          type: array
+          title: Bidder Priors
+        reserve_price:
+          type: number
+          minimum: 0.0
+          title: Reserve Price
+        n_simulations:
+          type: integer
+          maximum: 100000.0
+          minimum: 100.0
+          title: N Simulations
+          default: 10000
+        seed:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Seed
       type: object
       required:
-      - recommended_format
-      - scores
-      - expected_revenue_by_format
-      - rationale
-      title: FormatRecResponse
+      - auction_format
+      - bidder_priors
+      - reserve_price
+      title: SimulateRequest
     FormatRecRequest:
       properties:
         bidder_value_prior:
@@ -157,61 +165,6 @@ components:
       - n_bidders
       - seller_valuation
       title: FormatRecRequest
-    ValidationError:
-      properties:
-        loc:
-          items:
-            anyOf:
-            - type: string
-            - type: integer
-          type: array
-          title: Location
-        msg:
-          type: string
-          title: Message
-        type:
-          type: string
-          title: Error Type
-        input:
-          title: Input
-        ctx:
-          type: object
-          title: Context
-      type: object
-      required:
-      - loc
-      - msg
-      - type
-      title: ValidationError
-    OptimalBidResponse:
-      properties:
-        optimal_bid:
-          type: number
-          title: Optimal Bid
-        expected_surplus:
-          anyOf:
-          - type: number
-          - type: 'null'
-          title: Expected Surplus
-        win_probability:
-          anyOf:
-          - type: number
-          - type: 'null'
-          title: Win Probability
-        dominant_strategy:
-          type: boolean
-          title: Dominant Strategy
-        rationale:
-          type: string
-          title: Rationale
-      type: object
-      required:
-      - optimal_bid
-      - expected_surplus
-      - win_probability
-      - dominant_strategy
-      - rationale
-      title: OptimalBidResponse
     OptimalReserveResponse:
       properties:
         reserve_price:
@@ -252,46 +205,6 @@ components:
       - family
       - params
       title: PriorParams
-    SimulateRequest:
-      properties:
-        auction_format:
-          type: string
-          title: Auction Format
-        bidder_priors:
-          items:
-            $ref: '#/components/schemas/PriorParams'
-          type: array
-          title: Bidder Priors
-        reserve_price:
-          type: number
-          minimum: 0.0
-          title: Reserve Price
-        n_simulations:
-          type: integer
-          maximum: 100000.0
-          minimum: 100.0
-          title: N Simulations
-          default: 10000
-        seed:
-          anyOf:
-          - type: integer
-          - type: 'null'
-          title: Seed
-      type: object
-      required:
-      - auction_format
-      - bidder_priors
-      - reserve_price
-      title: SimulateRequest
-    HTTPValidationError:
-      properties:
-        detail:
-          items:
-            $ref: '#/components/schemas/ValidationError'
-          type: array
-          title: Detail
-      type: object
-      title: HTTPValidationError
     SimulateResponse:
       properties:
         mean_revenue:
@@ -321,25 +234,15 @@ components:
       - winner_index_distribution
       - n_simulations
       title: SimulateResponse
-    OptimalReserveRequest:
+    HTTPValidationError:
       properties:
-        bidder_value_prior:
-          $ref: '#/components/schemas/PriorParams'
-        n_bidders:
-          type: integer
-          maximum: 100.0
-          minimum: 1.0
-          title: N Bidders
-        seller_valuation:
-          type: number
-          minimum: 0.0
-          title: Seller Valuation
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
       type: object
-      required:
-      - bidder_value_prior
-      - n_bidders
-      - seller_valuation
-      title: OptimalReserveRequest
+      title: HTTPValidationError
     OptimalBidRequest:
       properties:
         share_outcome:
@@ -399,3 +302,100 @@ components:
       - n_competing_bidders
       - competitor_value_prior
       title: OptimalBidRequest
+    OptimalBidResponse:
+      properties:
+        optimal_bid:
+          type: number
+          title: Optimal Bid
+        expected_surplus:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Expected Surplus
+        win_probability:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Win Probability
+        dominant_strategy:
+          type: boolean
+          title: Dominant Strategy
+        rationale:
+          type: string
+          title: Rationale
+      type: object
+      required:
+      - optimal_bid
+      - expected_surplus
+      - win_probability
+      - dominant_strategy
+      - rationale
+      title: OptimalBidResponse
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    FormatRecResponse:
+      properties:
+        recommended_format:
+          type: string
+          title: Recommended Format
+        scores:
+          additionalProperties: true
+          type: object
+          title: Scores
+        expected_revenue_by_format:
+          additionalProperties: true
+          type: object
+          title: Expected Revenue By Format
+        rationale:
+          type: string
+          title: Rationale
+      type: object
+      required:
+      - recommended_format
+      - scores
+      - expected_revenue_by_format
+      - rationale
+      title: FormatRecResponse
+    OptimalReserveRequest:
+      properties:
+        bidder_value_prior:
+          $ref: '#/components/schemas/PriorParams'
+        n_bidders:
+          type: integer
+          maximum: 100.0
+          minimum: 1.0
+          title: N Bidders
+        seller_valuation:
+          type: number
+          minimum: 0.0
+          title: Seller Valuation
+      type: object
+      required:
+      - bidder_value_prior
+      - n_bidders
+      - seller_valuation
+      title: OptimalReserveRequest

@@ -468,73 +468,6 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
-    RevealFirstStrikeResponse:
-      properties:
-        verified:
-          type: boolean
-          title: Verified
-        binding_offer:
-          type: number
-          title: Binding Offer
-        buyer_id:
-          type: string
-          title: Buyer Id
-        seller_id:
-          type: string
-          title: Seller Id
-        revealed_at_unix:
-          type: integer
-          title: Revealed At Unix
-        reused:
-          type: boolean
-          title: Reused
-      type: object
-      required:
-      - verified
-      - binding_offer
-      - buyer_id
-      - seller_id
-      - revealed_at_unix
-      - reused
-      title: RevealFirstStrikeResponse
-    DeclareFirstStrikeRequest:
-      properties:
-        buyer_id:
-          type: string
-          maxLength: 128
-          minLength: 1
-          title: Buyer Id
-        seller_id:
-          type: string
-          maxLength: 128
-          minLength: 1
-          title: Seller Id
-        reservation_hash:
-          type: string
-          maxLength: 43
-          minLength: 43
-          pattern: ^[A-Za-z0-9_\-]{43}$
-          title: Reservation Hash
-          description: SHA-256 base64url of (reservation || nonce || salt || ids)
-        deadline_iso:
-          type: string
-          maxLength: 64
-          minLength: 15
-          title: Deadline Iso
-          description: ISO 8601 deadline, e.g. 2026-04-29T14:00:00Z
-        binding_ttl_seconds:
-          type: integer
-          maximum: 86400.0
-          minimum: 60.0
-          title: Binding Ttl Seconds
-      type: object
-      required:
-      - buyer_id
-      - seller_id
-      - reservation_hash
-      - deadline_iso
-      - binding_ttl_seconds
-      title: DeclareFirstStrikeRequest
     BundleIssue:
       properties:
         name:
@@ -565,6 +498,247 @@ components:
       - my_utility
       - their_utility
       title: BundleIssue
+    NegotiateTurnRequest:
+      properties:
+        side:
+          type: string
+          enum:
+          - sell
+          - buy
+          title: Side
+          description: Which side you are
+        walk_away:
+          type: number
+          title: Walk Away
+          description: 'Your reservation in dollars: the WORST price you''d accept (seller=floor, buyer=ceiling)'
+        target:
+          type: number
+          title: Target
+          description: Your aspiration in dollars (seller=high, buyer=low)
+        counterparty_offers:
+          items:
+            type: number
+          type: array
+          title: Counterparty Offers
+          description: The other side's offers so far, in dollars, oldest first
+        my_previous_offers:
+          items:
+            type: number
+          type: array
+          title: My Previous Offers
+        rounds_left:
+          type: integer
+          minimum: 1.0
+          title: Rounds Left
+          description: Roughly how many more back-and-forths before it times out
+          default: 8
+        item:
+          type: string
+          title: Item
+          description: What's being traded (for the message)
+          default: this
+      type: object
+      required:
+      - side
+      - walk_away
+      - target
+      title: NegotiateTurnRequest
+    SessionOpenIn:
+      properties:
+        api_key:
+          type: string
+          title: Api Key
+        category:
+          type: string
+          title: Category
+          description: resale | supply | retail
+        side:
+          type: string
+          title: Side
+          description: buy | sell
+        walk_away:
+          type: number
+          exclusiveMinimum: 0.0
+          title: Walk Away
+          description: your floor (sell) / ceiling (buy)
+        target:
+          type: number
+          exclusiveMinimum: 0.0
+          title: Target
+          description: your aspiration
+        their_offers:
+          anyOf:
+          - items:
+              type: number
+            type: array
+          - type: 'null'
+          title: Their Offers
+        my_offers:
+          anyOf:
+          - items:
+              type: number
+            type: array
+          - type: 'null'
+          title: My Offers
+        rounds_left:
+          anyOf:
+          - type: integer
+            minimum: 1.0
+          - type: 'null'
+          title: Rounds Left
+        seed:
+          type: integer
+          title: Seed
+          default: 0
+      type: object
+      required:
+      - api_key
+      - category
+      - side
+      - walk_away
+      - target
+      title: SessionOpenIn
+    DisputeNegotiateRequest:
+      properties:
+        platform_first_offer:
+          type: number
+          minimum: 0.0
+          title: Platform First Offer
+          description: The platform's lowball opening offer
+        platform_walk_cost:
+          type: number
+          exclusiveMinimum: 0.0
+          title: Platform Walk Cost
+          description: The platform's walk-away cost — the most it will pay before a chargeback + continued handling cost it more
+        customer_floor:
+          type: number
+          minimum: 0.0
+          title: Customer Floor
+          description: The least the customer will accept before walking away
+        customer_target:
+          anyOf:
+          - type: number
+            minimum: 0.0
+          - type: 'null'
+          title: Customer Target
+          description: The customer's happy point (carried through for display)
+        deadline_rounds:
+          type: integer
+          maximum: 32.0
+          minimum: 4.0
+          title: Deadline Rounds
+          default: 10
+      type: object
+      required:
+      - platform_first_offer
+      - platform_walk_cost
+      - customer_floor
+      title: DisputeNegotiateRequest
+      description: 'Inputs for a refund-dispute settlement negotiation. All dollar
+
+        amounts in USD.'
+    SessionMoveIn:
+      properties:
+        api_key:
+          type: string
+          title: Api Key
+        session_id:
+          type: string
+          title: Session Id
+        their_offers:
+          items:
+            type: number
+          type: array
+          title: Their Offers
+        my_offers:
+          anyOf:
+          - items:
+              type: number
+            type: array
+          - type: 'null'
+          title: My Offers
+        rounds_left:
+          anyOf:
+          - type: integer
+            minimum: 1.0
+          - type: 'null'
+          title: Rounds Left
+      type: object
+      required:
+      - api_key
+      - session_id
+      - their_offers
+      title: SessionMoveIn
+    RevealFirstStrikeResponse:
+      properties:
+        verified:
+          type: boolean
+          title: Verified
+        binding_offer:
+          type: number
+          title: Binding Offer
+        buyer_id:
+          type: string
+          title: Buyer Id
+        seller_id:
+          type: string
+          title: Seller Id
+        revealed_at_unix:
+          type: integer
+          title: Revealed At Unix
+        reused:
+          type: boolean
+          title: Reused
+      type: object
+      required:
+      - verified
+      - binding_offer
+      - buyer_id
+      - seller_id
+      - revealed_at_unix
+      - reused
+      title: RevealFirstStrikeResponse
+    DetectAnchorAttackRequest:
+      properties:
+        opponent_offer_history:
+          items:
+            type: number
+          type: array
+          maxItems: 128
+          minItems: 0
+          title: Opponent Offer History
+        market_prior:
+          $ref: '#/components/schemas/MarketPrior'
+      type: object
+      required:
+      - opponent_offer_history
+      - market_prior
+      title: DetectAnchorAttackRequest
+    DeclareFirstStrikeResponse:
+      properties:
+        commitment_id:
+          type: string
+          title: Commitment Id
+        attestation_jwt:
+          type: string
+          title: Attestation Jwt
+        expires_at_unix:
+          type: integer
+          title: Expires At Unix
+        expires_at_iso:
+          type: string
+          title: Expires At Iso
+        trust_anchor_public_key_pem:
+          type: string
+          title: Trust Anchor Public Key Pem
+      type: object
+      required:
+      - commitment_id
+      - attestation_jwt
+      - expires_at_unix
+      - expires_at_iso
+      - trust_anchor_public_key_pem
+      title: DeclareFirstStrikeResponse
     NextOfferRequest:
       properties:
         session_id:
@@ -620,6 +794,146 @@ components:
       - role
       - my_reservation
       title: NextOfferRequest
+    SellNextOfferRequest:
+      properties:
+        share_outcome:
+          type: boolean
+          title: Share Outcome
+          description: 'Opt-in: contribute this (anonymized) call to the prior corpus. Default False. Requires account-level consent set at /v1/keys issuance.'
+          default: false
+        vertical:
+          anyOf:
+          - type: string
+            enum:
+            - ad_inventory
+            - saas_procurement
+            - cloud_compute
+            - freight_logistics
+            - media_licensing
+            - m_and_a_buyside
+            - m_and_a_sellside
+            - real_estate
+            - energy_trading
+            - professional_services
+            - marketplace_b2b
+            - other
+          - type: 'null'
+          title: Vertical
+          description: Self-declared vertical (allowlisted enum). Required when share_outcome=True. Use 'other' if none fit.
+        my_reservation:
+          type: number
+          maximum: 1.0
+          minimum: 0.0
+          title: My Reservation
+          description: Our walk-away utility, normalized to [0, 1]
+        opponent_offer_history:
+          items:
+            type: number
+          type: array
+          maxItems: 128
+          title: Opponent Offer History
+          description: Opponent's offers evaluated in our utility space, in [0, 1]
+        my_offer_history:
+          items:
+            type: number
+          type: array
+          maxItems: 128
+          title: My Offer History
+        deadline_rounds:
+          type: integer
+          maximum: 64.0
+          minimum: 1.0
+          title: Deadline Rounds
+          description: Total rounds before the negotiation times out
+        pareto_knob:
+          type: number
+          maximum: 1.0
+          minimum: 0.0
+          title: Pareto Knob
+          description: 0=max deal rate, 1=max H2H margin (only used when peer_mode=False)
+          default: 0.5
+        buyer_wtp_prior:
+          anyOf:
+          - $ref: '#/components/schemas/WTPPrior'
+          - type: 'null'
+        peer_mode:
+          type: boolean
+          title: Peer Mode
+          description: Set True when counterparty is a verified SNHP-protocol peer (cryptographic attestation). Activates cooperative architecture (PEER playbook + max-self signaling). Empirically reaches 96-101% of Pareto frontier vs 89-92% for vanilla descent. See /llms.txt.
+          default: false
+      type: object
+      required:
+      - my_reservation
+      - deadline_rounds
+      title: SellNextOfferRequest
+    RevealFirstStrikeRequest:
+      properties:
+        commitment_id:
+          type: string
+          title: Commitment Id
+        reservation:
+          type: number
+          title: Reservation
+        nonce:
+          type: string
+          minLength: 1
+          title: Nonce
+        salt:
+          type: string
+          minLength: 1
+          title: Salt
+      type: object
+      required:
+      - commitment_id
+      - reservation
+      - nonce
+      - salt
+      title: RevealFirstStrikeRequest
+    NegotiateBundleRequest:
+      properties:
+        issues:
+          items:
+            $ref: '#/components/schemas/BundleIssue'
+          type: array
+          title: Issues
+          description: The issues on the table (2+ for logrolling), each with your and their per-option values
+        their_offers:
+          items:
+            additionalProperties: true
+            type: object
+          type: array
+          title: Their Offers
+          description: 'The other side''s offers so far as {issue_name: option}, oldest first'
+        my_priorities:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: My Priorities
+          description: 'Optional {issue_name: weight} — how much each issue matters to you'
+        my_batna:
+          type: number
+          maximum: 1.0
+          minimum: 0.0
+          title: My Batna
+          default: 0.4
+        their_batna_estimate:
+          type: number
+          maximum: 1.0
+          minimum: 0.0
+          title: Their Batna Estimate
+          default: 0.4
+        rounds_left:
+          anyOf:
+          - type: integer
+            minimum: 1.0
+          - type: 'null'
+          title: Rounds Left
+          description: Optional bargaining rounds remaining. On the LAST round (<=1) a standing offer that clears your BATNA is accepted rather than countered into no-deal. Omit for timeless behavior.
+      type: object
+      required:
+      - issues
+      title: NegotiateBundleRequest
     BuyNextOfferRequest:
       properties:
         share_outcome:
@@ -699,248 +1013,40 @@ components:
       - my_reservation
       - deadline_rounds
       title: BuyNextOfferRequest
-    SessionCloseIn:
+    SellNextOfferResponse:
       properties:
-        api_key:
-          type: string
-          title: Api Key
-        session_id:
-          type: string
-          title: Session Id
-      type: object
-      required:
-      - api_key
-      - session_id
-      title: SessionCloseIn
-    DisputeNegotiateRequest:
-      properties:
-        platform_first_offer:
+        recommended_offer:
           type: number
-          minimum: 0.0
-          title: Platform First Offer
-          description: The platform's lowball opening offer
-        platform_walk_cost:
+          title: Recommended Offer
+        acceptance_probability:
           type: number
-          exclusiveMinimum: 0.0
-          title: Platform Walk Cost
-          description: The platform's walk-away cost — the most it will pay before a chargeback + continued handling cost it more
-        customer_floor:
+          title: Acceptance Probability
+        expected_payoff:
           type: number
-          minimum: 0.0
-          title: Customer Floor
-          description: The least the customer will accept before walking away
-        customer_target:
-          anyOf:
-          - type: number
-            minimum: 0.0
-          - type: 'null'
-          title: Customer Target
-          description: The customer's happy point (carried through for display)
-        deadline_rounds:
-          type: integer
-          maximum: 32.0
-          minimum: 4.0
-          title: Deadline Rounds
-          default: 10
-      type: object
-      required:
-      - platform_first_offer
-      - platform_walk_cost
-      - customer_floor
-      title: DisputeNegotiateRequest
-      description: 'Inputs for a refund-dispute settlement negotiation. All dollar
-
-        amounts in USD.'
-    ValidationError:
-      properties:
-        loc:
-          items:
-            anyOf:
-            - type: string
-            - type: integer
-          type: array
-          title: Location
-        msg:
+          title: Expected Payoff
+        rationale:
           type: string
-          title: Message
-        type:
-          type: string
-          title: Error Type
-        input:
-          title: Input
-        ctx:
+          title: Rationale
+        posterior:
+          additionalProperties: true
           type: object
-          title: Context
+          title: Posterior
+        rubinstein_share:
+          type: number
+          title: Rubinstein Share
+        schelling_floor:
+          type: number
+          title: Schelling Floor
       type: object
       required:
-      - loc
-      - msg
-      - type
-      title: ValidationError
-    WTPPrior:
-      properties:
-        mu:
-          type: number
-          title: Mu
-          description: Lognormal μ of buyer WTP
-        sigma:
-          type: number
-          title: Sigma
-          description: Lognormal σ of buyer WTP
-      type: object
-      required:
-      - mu
-      - sigma
-      title: WTPPrior
-    SellNextOfferRequest:
-      properties:
-        share_outcome:
-          type: boolean
-          title: Share Outcome
-          description: 'Opt-in: contribute this (anonymized) call to the prior corpus. Default False. Requires account-level consent set at /v1/keys issuance.'
-          default: false
-        vertical:
-          anyOf:
-          - type: string
-            enum:
-            - ad_inventory
-            - saas_procurement
-            - cloud_compute
-            - freight_logistics
-            - media_licensing
-            - m_and_a_buyside
-            - m_and_a_sellside
-            - real_estate
-            - energy_trading
-            - professional_services
-            - marketplace_b2b
-            - other
-          - type: 'null'
-          title: Vertical
-          description: Self-declared vertical (allowlisted enum). Required when share_outcome=True. Use 'other' if none fit.
-        my_reservation:
-          type: number
-          maximum: 1.0
-          minimum: 0.0
-          title: My Reservation
-          description: Our walk-away utility, normalized to [0, 1]
-        opponent_offer_history:
-          items:
-            type: number
-          type: array
-          maxItems: 128
-          title: Opponent Offer History
-          description: Opponent's offers evaluated in our utility space, in [0, 1]
-        my_offer_history:
-          items:
-            type: number
-          type: array
-          maxItems: 128
-          title: My Offer History
-        deadline_rounds:
-          type: integer
-          maximum: 64.0
-          minimum: 1.0
-          title: Deadline Rounds
-          description: Total rounds before the negotiation times out
-        pareto_knob:
-          type: number
-          maximum: 1.0
-          minimum: 0.0
-          title: Pareto Knob
-          description: 0=max deal rate, 1=max H2H margin (only used when peer_mode=False)
-          default: 0.5
-        buyer_wtp_prior:
-          anyOf:
-          - $ref: '#/components/schemas/WTPPrior'
-          - type: 'null'
-        peer_mode:
-          type: boolean
-          title: Peer Mode
-          description: Set True when counterparty is a verified SNHP-protocol peer (cryptographic attestation). Activates cooperative architecture (PEER playbook + max-self signaling). Empirically reaches 96-101% of Pareto frontier vs 89-92% for vanilla descent. See /llms.txt.
-          default: false
-      type: object
-      required:
-      - my_reservation
-      - deadline_rounds
-      title: SellNextOfferRequest
-    NegotiateTurnRequest:
-      properties:
-        side:
-          type: string
-          enum:
-          - sell
-          - buy
-          title: Side
-          description: Which side you are
-        walk_away:
-          type: number
-          title: Walk Away
-          description: 'Your reservation in dollars: the WORST price you''d accept (seller=floor, buyer=ceiling)'
-        target:
-          type: number
-          title: Target
-          description: Your aspiration in dollars (seller=high, buyer=low)
-        counterparty_offers:
-          items:
-            type: number
-          type: array
-          title: Counterparty Offers
-          description: The other side's offers so far, in dollars, oldest first
-        my_previous_offers:
-          items:
-            type: number
-          type: array
-          title: My Previous Offers
-        rounds_left:
-          type: integer
-          minimum: 1.0
-          title: Rounds Left
-          description: Roughly how many more back-and-forths before it times out
-          default: 8
-        item:
-          type: string
-          title: Item
-          description: What's being traded (for the message)
-          default: this
-      type: object
-      required:
-      - side
-      - walk_away
-      - target
-      title: NegotiateTurnRequest
-    RevealFirstStrikeRequest:
-      properties:
-        commitment_id:
-          type: string
-          title: Commitment Id
-        reservation:
-          type: number
-          title: Reservation
-        nonce:
-          type: string
-          minLength: 1
-          title: Nonce
-        salt:
-          type: string
-          minLength: 1
-          title: Salt
-      type: object
-      required:
-      - commitment_id
-      - reservation
-      - nonce
-      - salt
-      title: RevealFirstStrikeRequest
-    HTTPValidationError:
-      properties:
-        detail:
-          items:
-            $ref: '#/components/schemas/ValidationError'
-          type: array
-          title: Detail
-      type: object
-      title: HTTPValidationError
+      - recommended_offer
+      - acceptance_probability
+      - expected_payoff
+      - rationale
+      - posterior
+      - rubinstein_share
+      - schelling_floor
+      title: SellNextOfferResponse
     BundleMoveIn:
       properties:
         api_key:
@@ -988,22 +1094,180 @@ components:
       - session_id
       - issues
       title: BundleMoveIn
-    DetectAnchorAttackRequest:
+    SessionCloseIn:
       properties:
-        opponent_offer_history:
-          items:
-            type: number
-          type: array
-          maxItems: 128
-          minItems: 0
-          title: Opponent Offer History
-        market_prior:
-          $ref: '#/components/schemas/MarketPrior'
+        api_key:
+          type: string
+          title: Api Key
+        session_id:
+          type: string
+          title: Session Id
       type: object
       required:
-      - opponent_offer_history
-      - market_prior
-      title: DetectAnchorAttackRequest
+      - api_key
+      - session_id
+      title: SessionCloseIn
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    DeclareFirstStrikeRequest:
+      properties:
+        buyer_id:
+          type: string
+          maxLength: 128
+          minLength: 1
+          title: Buyer Id
+        seller_id:
+          type: string
+          maxLength: 128
+          minLength: 1
+          title: Seller Id
+        reservation_hash:
+          type: string
+          maxLength: 43
+          minLength: 43
+          pattern: ^[A-Za-z0-9_\-]{43}$
+          title: Reservation Hash
+          description: SHA-256 base64url of (reservation || nonce || salt || ids)
+        deadline_iso:
+          type: string
+          maxLength: 64
+          minLength: 15
+          title: Deadline Iso
+          description: ISO 8601 deadline, e.g. 2026-04-29T14:00:00Z
+        binding_ttl_seconds:
+          type: integer
+          maximum: 86400.0
+          minimum: 60.0
+          title: Binding Ttl Seconds
+      type: object
+      required:
+      - buyer_id
+      - seller_id
+      - reservation_hash
+      - deadline_iso
+      - binding_ttl_seconds
+      title: DeclareFirstStrikeRequest
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    PeerProof:
+      properties:
+        operator_attestation_jwt:
+          type: string
+          title: Operator Attestation Jwt
+        sig_b64:
+          type: string
+          title: Sig B64
+        role:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Role
+        expires_at:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Expires At
+      type: object
+      required:
+      - operator_attestation_jwt
+      - sig_b64
+      title: PeerProof
+    DetectAnchorAttackResponse:
+      properties:
+        is_anchor_attack:
+          type: boolean
+          title: Is Anchor Attack
+        z_score:
+          type: number
+          title: Z Score
+        severity:
+          type: number
+          title: Severity
+        recommended_response:
+          type: string
+          title: Recommended Response
+        rationale:
+          type: string
+          title: Rationale
+      type: object
+      required:
+      - is_anchor_attack
+      - z_score
+      - severity
+      - recommended_response
+      - rationale
+      title: DetectAnchorAttackResponse
+    OpenSessionRequest:
+      properties:
+        negotiation_id:
+          type: string
+          title: Negotiation Id
+          description: Shared id both agents agree on (e.g. the A2A task id)
+        seller_proof:
+          $ref: '#/components/schemas/PeerProof'
+        buyer_proof:
+          $ref: '#/components/schemas/PeerProof'
+        require_level:
+          type: string
+          enum:
+          - self
+          - domain
+          title: Require Level
+          description: Minimum counterparty verification level for peer_mode
+          default: self
+      type: object
+      required:
+      - negotiation_id
+      - seller_proof
+      - buyer_proof
+      title: OpenSessionRequest
+    MarketPrior:
+      properties:
+        mu:
+          type: number
+          title: Mu
+          description: Mean utility-to-buyer of typical seller openings, in [0, 1]
+        sigma:
+          type: number
+          exclusiveMinimum: 0.0
+          title: Sigma
+          description: Std of typical seller openings
+      type: object
+      required:
+      - mu
+      - sigma
+      title: MarketPrior
     BuyNextOfferResponse:
       properties:
         recommended_offer:
@@ -1052,175 +1316,21 @@ components:
       - rubinstein_share
       - schelling_floor
       title: BuyNextOfferResponse
-    PeerProof:
+    WTPPrior:
       properties:
-        operator_attestation_jwt:
-          type: string
-          title: Operator Attestation Jwt
-        sig_b64:
-          type: string
-          title: Sig B64
-        role:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Role
-        expires_at:
-          anyOf:
-          - type: integer
-          - type: 'null'
-          title: Expires At
+        mu:
+          type: number
+          title: Mu
+          description: Lognormal μ of buyer WTP
+        sigma:
+          type: number
+          title: Sigma
+          description: Lognormal σ of buyer WTP
       type: object
       required:
-      - operator_attestation_jwt
-      - sig_b64
-      title: PeerProof
-    SessionOpenIn:
-      properties:
-        api_key:
-          type: string
-          title: Api Key
-        category:
-          type: string
-          title: Category
-          description: resale | supply | retail
-        side:
-          type: string
-          title: Side
-          description: buy | sell
-        walk_away:
-          type: number
-          exclusiveMinimum: 0.0
-          title: Walk Away
-          description: your floor (sell) / ceiling (buy)
-        target:
-          type: number
-          exclusiveMinimum: 0.0
-          title: Target
-          description: your aspiration
-        their_offers:
-          anyOf:
-          - items:
-              type: number
-            type: array
-          - type: 'null'
-          title: Their Offers
-        my_offers:
-          anyOf:
-          - items:
-              type: number
-            type: array
-          - type: 'null'
-          title: My Offers
-        rounds_left:
-          anyOf:
-          - type: integer
-            minimum: 1.0
-          - type: 'null'
-          title: Rounds Left
-        seed:
-          type: integer
-          title: Seed
-          default: 0
-      type: object
-      required:
-      - api_key
-      - category
-      - side
-      - walk_away
-      - target
-      title: SessionOpenIn
-    DeclareFirstStrikeResponse:
-      properties:
-        commitment_id:
-          type: string
-          title: Commitment Id
-        attestation_jwt:
-          type: string
-          title: Attestation Jwt
-        expires_at_unix:
-          type: integer
-          title: Expires At Unix
-        expires_at_iso:
-          type: string
-          title: Expires At Iso
-        trust_anchor_public_key_pem:
-          type: string
-          title: Trust Anchor Public Key Pem
-      type: object
-      required:
-      - commitment_id
-      - attestation_jwt
-      - expires_at_unix
-      - expires_at_iso
-      - trust_anchor_public_key_pem
-      title: DeclareFirstStrikeResponse
-    SellNextOfferResponse:
-      properties:
-        recommended_offer:
-          type: number
-          title: Recommended Offer
-        acceptance_probability:
-          type: number
-          title: Acceptance Probability
-        expected_payoff:
-          type: number
-          title: Expected Payoff
-        rationale:
-          type: string
-          title: Rationale
-        posterior:
-          additionalProperties: true
-          type: object
-          title: Posterior
-        rubinstein_share:
-          type: number
-          title: Rubinstein Share
-        schelling_floor:
-          type: number
-          title: Schelling Floor
-      type: object
-      required:
-      - recommended_offer
-      - acceptance_probability
-      - expected_payoff
-      - rationale
-      - posterior
-      - rubinstein_share
-      - schelling_floor
-      title: SellNextOfferResponse
-    SessionMoveIn:
-      properties:
-        api_key:
-          type: string
-          title: Api Key
-        session_id:
-          type: string
-          title: Session Id
-        their_offers:
-          items:
-            type: number
-          type: array
-          title: Their Offers
-        my_offers:
-          anyOf:
-          - items:
-              type: number
-            type: array
-          - type: 'null'
-          title: My Offers
-        rounds_left:
-          anyOf:
-          - type: integer
-            minimum: 1.0
-          - type: 'null'
-          title: Rounds Left
-      type: object
-      required:
-      - api_key
-      - session_id
-      - their_offers
-      title: SessionMoveIn
+      - mu
+      - sigma
+      title: WTPPrior
     SettleRequest:
       properties:
         session_id:
@@ -1255,113 +1365,3 @@ components:
       - session_id
       - agreed_price
       title: SettleRequest
-    OpenSessionRequest:
-      properties:
-        negotiation_id:
-          type: string
-          title: Negotiation Id
-          description: Shared id both agents agree on (e.g. the A2A task id)
-        seller_proof:
-          $ref: '#/components/schemas/PeerProof'
-        buyer_proof:
-          $ref: '#/components/schemas/PeerProof'
-        require_level:
-          type: string
-          enum:
-          - self
-          - domain
-          title: Require Level
-          description: Minimum counterparty verification level for peer_mode
-          default: self
-      type: object
-      required:
-      - negotiation_id
-      - seller_proof
-      - buyer_proof
-      title: OpenSessionRequest
-    MarketPrior:
-      properties:
-        mu:
-          type: number
-          title: Mu
-          description: Mean utility-to-buyer of typical seller openings, in [0, 1]
-        sigma:
-          type: number
-          exclusiveMinimum: 0.0
-          title: Sigma
-          description: Std of typical seller openings
-      type: object
-      required:
-      - mu
-      - sigma
-      title: MarketPrior
-    NegotiateBundleRequest:
-      properties:
-        issues:
-          items:
-            $ref: '#/components/schemas/BundleIssue'
-          type: array
-          title: Issues
-          description: The issues on the table (2+ for logrolling), each with your and their per-option values
-        their_offers:
-          items:
-            additionalProperties: true
-            type: object
-          type: array
-          title: Their Offers
-          description: 'The other side''s offers so far as {issue_name: option}, oldest first'
-        my_priorities:
-          anyOf:
-          - additionalProperties: true
-            type: object
-          - type: 'null'
-          title: My Priorities
-          description: 'Optional {issue_name: weight} — how much each issue matters to you'
-        my_batna:
-          type: number
-          maximum: 1.0
-          minimum: 0.0
-          title: My Batna
-          default: 0.4
-        their_batna_estimate:
-          type: number
-          maximum: 1.0
-          minimum: 0.0
-          title: Their Batna Estimate
-          default: 0.4
-        rounds_left:
-          anyOf:
-          - type: integer
-            minimum: 1.0
-          - type: 'null'
-          title: Rounds Left
-          description: Optional bargaining rounds remaining. On the LAST round (<=1) a standing offer that clears your BATNA is accepted rather than countered into no-deal. Omit for timeless behavior.
-      type: object
-      required:
-      - issues
-      title: NegotiateBundleRequest
-    DetectAnchorAttackResponse:
-      properties:
-        is_anchor_attack:
-          type: boolean
-          title: Is Anchor Attack
-        z_score:
-          type: number
-          title: Z Score
-        severity:
-          type: number
-          title: Severity
-        recommended_response:
-          type: string
-          title: Recommended Response
-        rationale:
-          type: string
-          title: Rationale
-      type: object
-      required:
-      - is_anchor_attack
-      - z_score
-      - severity
-      - recommended_response
-      - rationale
-      title: DetectAnchorAttackResponse

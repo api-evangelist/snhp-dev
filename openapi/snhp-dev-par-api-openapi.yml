@@ -401,74 +401,6 @@ components:
       - day
       - user_id
       title: SubmitReq
-    ValidationError:
-      properties:
-        loc:
-          items:
-            anyOf:
-            - type: string
-            - type: integer
-          type: array
-          title: Location
-        msg:
-          type: string
-          title: Message
-        type:
-          type: string
-          title: Error Type
-        input:
-          title: Input
-        ctx:
-          type: object
-          title: Context
-      type: object
-      required:
-      - loc
-      - msg
-      - type
-      title: ValidationError
-    WaitReq:
-      properties:
-        user_id:
-          type: string
-          maxLength: 64
-          title: User Id
-        scenario:
-          type: string
-          maxLength: 64
-          title: Scenario
-        contact:
-          anyOf:
-          - type: string
-            maxLength: 128
-          - type: 'null'
-          title: Contact
-      type: object
-      required:
-      - user_id
-      - scenario
-      title: WaitReq
-    JoinReq:
-      properties:
-        group:
-          type: string
-          maxLength: 64
-          title: Group
-        user_id:
-          type: string
-          maxLength: 64
-          title: User Id
-        name:
-          anyOf:
-          - type: string
-            maxLength: 40
-          - type: 'null'
-          title: Name
-      type: object
-      required:
-      - group
-      - user_id
-      title: JoinReq
     MoveReq:
       properties:
         day:
@@ -496,6 +428,20 @@ components:
       - your_offers
       - rounds_left
       title: MoveReq
+    GradeReq:
+      properties:
+        day:
+          type: integer
+          title: Day
+        close:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Close
+      type: object
+      required:
+      - day
+      title: GradeReq
     EventReq:
       properties:
         user_id:
@@ -517,20 +463,48 @@ components:
       - user_id
       - name
       title: EventReq
-    GradeReq:
+    JoinReq:
       properties:
-        day:
-          type: integer
-          title: Day
-        close:
+        group:
+          type: string
+          maxLength: 64
+          title: Group
+        user_id:
+          type: string
+          maxLength: 64
+          title: User Id
+        name:
           anyOf:
-          - type: number
+          - type: string
+            maxLength: 40
           - type: 'null'
-          title: Close
+          title: Name
       type: object
       required:
-      - day
-      title: GradeReq
+      - group
+      - user_id
+      title: JoinReq
+    WaitReq:
+      properties:
+        user_id:
+          type: string
+          maxLength: 64
+          title: User Id
+        scenario:
+          type: string
+          maxLength: 64
+          title: Scenario
+        contact:
+          anyOf:
+          - type: string
+            maxLength: 128
+          - type: 'null'
+          title: Contact
+      type: object
+      required:
+      - user_id
+      - scenario
+      title: WaitReq
     HTTPValidationError:
       properties:
         detail:
@@ -540,32 +514,6 @@ components:
           title: Detail
       type: object
       title: HTTPValidationError
-    BundleReq:
-      properties:
-        issues:
-          items:
-            additionalProperties: true
-            type: object
-          type: array
-          title: Issues
-        their_offers:
-          anyOf:
-          - items:
-              additionalProperties: true
-              type: object
-            type: array
-          - type: 'null'
-          title: Their Offers
-        my_priorities:
-          anyOf:
-          - additionalProperties: true
-            type: object
-          - type: 'null'
-          title: My Priorities
-      type: object
-      required:
-      - issues
-      title: BundleReq
     AdviseReq:
       properties:
         side:
@@ -602,3 +550,55 @@ components:
       - walk_away
       - target
       title: AdviseReq
+    BundleReq:
+      properties:
+        issues:
+          items:
+            additionalProperties: true
+            type: object
+          type: array
+          title: Issues
+        their_offers:
+          anyOf:
+          - items:
+              additionalProperties: true
+              type: object
+            type: array
+          - type: 'null'
+          title: Their Offers
+        my_priorities:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: My Priorities
+      type: object
+      required:
+      - issues
+      title: BundleReq
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError

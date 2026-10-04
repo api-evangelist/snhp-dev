@@ -62,95 +62,6 @@ paths:
                 $ref: '#/components/schemas/TelemetryExportResponse'
 components:
   schemas:
-    ValidationError:
-      properties:
-        loc:
-          items:
-            anyOf:
-            - type: string
-            - type: integer
-          type: array
-          title: Location
-        msg:
-          type: string
-          title: Message
-        type:
-          type: string
-          title: Error Type
-        input:
-          title: Input
-        ctx:
-          type: object
-          title: Context
-      type: object
-      required:
-      - loc
-      - msg
-      - type
-      title: ValidationError
-    ReportOutcomeResponse:
-      properties:
-        accepted:
-          type: boolean
-          title: Accepted
-          description: False if the recommendation_id doesn't exist, doesn't belong to this key, is in a different ISO week (too late), or has already been reported. Idempotent re-report = no-op.
-      type: object
-      required:
-      - accepted
-      title: ReportOutcomeResponse
-    ReportOutcomeRequest:
-      properties:
-        recommendation_id:
-          type: string
-          maxLength: 128
-          minLength: 1
-          title: Recommendation Id
-          description: The X-GT-Recommendation-Id returned when share_outcome=True
-        deal_closed:
-          type: boolean
-          title: Deal Closed
-          description: True if a deal was reached
-        my_utility:
-          anyOf:
-          - type: number
-            maximum: 1.0
-            minimum: 0.0
-          - type: 'null'
-          title: My Utility
-          description: Realized utility-to-self in [0, 1] (quantized at write)
-        opponent_utility:
-          anyOf:
-          - type: number
-            maximum: 1.0
-            minimum: 0.0
-          - type: 'null'
-          title: Opponent Utility
-          description: Realized utility-to-opponent if known, in [0, 1]
-      type: object
-      required:
-      - recommendation_id
-      - deal_closed
-      title: ReportOutcomeRequest
-    TelemetryDeleteResponse:
-      properties:
-        rows_deleted:
-          type: integer
-          title: Rows Deleted
-      type: object
-      required:
-      - rows_deleted
-      title: TelemetryDeleteResponse
-    TelemetryExportResponse:
-      properties:
-        rows:
-          items:
-            $ref: '#/components/schemas/TelemetryRecordOut'
-          type: array
-          title: Rows
-      type: object
-      required:
-      - rows
-      title: TelemetryExportResponse
     TelemetryRecordOut:
       properties:
         recommendation_id:
@@ -189,6 +100,48 @@ components:
       - created_at_hour
       - outcome
       title: TelemetryRecordOut
+    TelemetryDeleteResponse:
+      properties:
+        rows_deleted:
+          type: integer
+          title: Rows Deleted
+      type: object
+      required:
+      - rows_deleted
+      title: TelemetryDeleteResponse
+    ReportOutcomeRequest:
+      properties:
+        recommendation_id:
+          type: string
+          maxLength: 128
+          minLength: 1
+          title: Recommendation Id
+          description: The X-GT-Recommendation-Id returned when share_outcome=True
+        deal_closed:
+          type: boolean
+          title: Deal Closed
+          description: True if a deal was reached
+        my_utility:
+          anyOf:
+          - type: number
+            maximum: 1.0
+            minimum: 0.0
+          - type: 'null'
+          title: My Utility
+          description: Realized utility-to-self in [0, 1] (quantized at write)
+        opponent_utility:
+          anyOf:
+          - type: number
+            maximum: 1.0
+            minimum: 0.0
+          - type: 'null'
+          title: Opponent Utility
+          description: Realized utility-to-opponent if known, in [0, 1]
+      type: object
+      required:
+      - recommendation_id
+      - deal_closed
+      title: ReportOutcomeRequest
     HTTPValidationError:
       properties:
         detail:
@@ -198,3 +151,50 @@ components:
           title: Detail
       type: object
       title: HTTPValidationError
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    TelemetryExportResponse:
+      properties:
+        rows:
+          items:
+            $ref: '#/components/schemas/TelemetryRecordOut'
+          type: array
+          title: Rows
+      type: object
+      required:
+      - rows
+      title: TelemetryExportResponse
+    ReportOutcomeResponse:
+      properties:
+        accepted:
+          type: boolean
+          title: Accepted
+          description: False if the recommendation_id doesn't exist, doesn't belong to this key, is in a different ISO week (too late), or has already been reported. Idempotent re-report = no-op.
+      type: object
+      required:
+      - accepted
+      title: ReportOutcomeResponse

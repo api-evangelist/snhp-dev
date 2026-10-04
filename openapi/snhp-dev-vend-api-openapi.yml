@@ -69,6 +69,23 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
+    BuyerBlock:
+      properties:
+        disclosure:
+          additionalProperties: true
+          type: object
+          title: Disclosure
+          description: '{''utilities'': {sku: $}, ''walk_cost'': $}'
+        peer_proof:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Peer Proof
+      type: object
+      required:
+      - disclosure
+      title: BuyerBlock
     QuoteReq:
       properties:
         protocol:
@@ -85,6 +102,15 @@ components:
       required:
       - intent
       title: QuoteReq
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
     ValidationError:
       properties:
         loc:
@@ -111,23 +137,6 @@ components:
       - msg
       - type
       title: ValidationError
-    BuyerBlock:
-      properties:
-        disclosure:
-          additionalProperties: true
-          type: object
-          title: Disclosure
-          description: '{''utilities'': {sku: $}, ''walk_cost'': $}'
-        peer_proof:
-          anyOf:
-          - additionalProperties: true
-            type: object
-          - type: 'null'
-          title: Peer Proof
-      type: object
-      required:
-      - disclosure
-      title: BuyerBlock
     Intent:
       properties:
         sku:
@@ -151,12 +160,3 @@ components:
       required:
       - sku
       title: Intent
-    HTTPValidationError:
-      properties:
-        detail:
-          items:
-            $ref: '#/components/schemas/ValidationError'
-          type: array
-          title: Detail
-      type: object
-      title: HTTPValidationError
