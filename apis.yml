@@ -147,6 +147,8 @@ apis:
   humanURL: https://snhp.dev/docs
   baseURL: https://snhp.dev/mcp/
   tags:
+  - Auctions
+  tags_raw:
   - auctions
   properties:
   - type: OpenAPI
@@ -179,6 +181,8 @@ apis:
   humanURL: https://snhp.dev/docs
   baseURL: https://snhp.dev/mcp/
   tags:
+  - Billing
+  tags_raw:
   - billing
   properties:
   - type: OpenAPI
@@ -243,6 +247,8 @@ apis:
   humanURL: https://snhp.dev/docs
   baseURL: https://snhp.dev/mcp/
   tags:
+  - Discovery
+  tags_raw:
   - discovery
   properties:
   - type: OpenAPI
@@ -403,6 +409,8 @@ apis:
   humanURL: https://snhp.dev/docs
   baseURL: https://snhp.dev/mcp/
   tags:
+  - Mechanism
+  tags_raw:
   - mechanism
   properties:
   - type: OpenAPI
@@ -435,6 +443,8 @@ apis:
   humanURL: https://snhp.dev/docs
   baseURL: https://snhp.dev/mcp/
   tags:
+  - MPP
+  tags_raw:
   - mpp
   properties:
   - type: OpenAPI
@@ -467,6 +477,8 @@ apis:
   humanURL: https://snhp.dev/docs
   baseURL: https://snhp.dev/mcp/
   tags:
+  - Negotiation
+  tags_raw:
   - negotiation
   properties:
   - type: OpenAPI
@@ -499,6 +511,8 @@ apis:
   humanURL: https://snhp.dev/docs
   baseURL: https://snhp.dev/mcp/
   tags:
+  - Notary
+  tags_raw:
   - notary
   properties:
   - type: OpenAPI
@@ -533,6 +547,8 @@ apis:
   humanURL: https://snhp.dev/docs
   baseURL: https://snhp.dev/mcp/
   tags:
+  - Offer
+  tags_raw:
   - offer
   properties:
   - type: OpenAPI
@@ -565,6 +581,8 @@ apis:
   humanURL: https://snhp.dev/docs
   baseURL: https://snhp.dev/mcp/
   tags:
+  - PAR
+  tags_raw:
   - Par
   properties:
   - type: OpenAPI
@@ -597,6 +615,8 @@ apis:
   humanURL: https://snhp.dev/docs
   baseURL: https://snhp.dev/mcp/
   tags:
+  - Rent
+  tags_raw:
   - rent
   properties:
   - type: OpenAPI
@@ -693,6 +713,8 @@ apis:
   humanURL: https://snhp.dev/docs
   baseURL: https://snhp.dev/mcp/
   tags:
+  - Store
+  tags_raw:
   - store
   properties:
   - type: OpenAPI
@@ -725,6 +747,8 @@ apis:
   humanURL: https://snhp.dev/docs
   baseURL: https://snhp.dev/mcp/
   tags:
+  - Telemetry
+  tags_raw:
   - telemetry
   properties:
   - type: OpenAPI
