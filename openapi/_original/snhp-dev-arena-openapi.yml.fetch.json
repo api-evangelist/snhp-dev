@@ -1,0 +1,12 @@
+{
+ "url": "https://arena.snhp.dev/openapi.json",
+ "requested_url": "https://arena.snhp.dev/openapi.json",
+ "status": 200,
+ "content_type": "application/json",
+ "bytes": 20968,
+ "sha256": "18733f0e44bcbc43aec01654bbbd464c364a4942f32de7e2dc00ebab7a6c4211",
+ "fetched_at": "2026-10-04",
+ "fetched_by": "APIEvangelist-Harvest/1.0 (+https://apievangelist.com)",
+ "match": "equivalent",
+ "note": "Re-fetched from the provider by verify-openapi-sources.py; the provider's current document describes the same operations (Jaccard 1.0), but the bytes differ, so the archive is an earlier or reformatted copy."
+}
