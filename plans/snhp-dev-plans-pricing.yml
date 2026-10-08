@@ -105,3 +105,43 @@ disputed_line_item:
   reading: 'The repository document is the more recent and more considered statement; the live endpoint still carries the older tier. Neither is treated as a price here.'
 no_sdk_pricing_verbatim: 'No SDK is sold or needed — agents integrate via MCP and the OpenAPI spec (/openapi.json), so a bespoke client library would be redundant.'
 enterprise: 'MCP quickstart, API pilots, concierge — https://snhp.dev/build (301s to the homepage; contact ryuxik@gmail.com). No enterprise tier or seat price published.'
+x-canonical:
+  generated: '2026-10-08'
+  vocabulary: all/0-working/economics/plans-canonical.yml
+  models:
+  - free
+  - hybrid
+  - metered
+  - subscription
+  units: []
+  plans:
+  - name: Tier 0 — Core math
+    access: other
+    model: metered
+    model_how: derived
+    units: []
+    periods: []
+  - name: NEXTMOVE receipted negotiation session (anchor SKU)
+    access: other
+    model: hybrid
+    model_how: derived
+    units: []
+    periods: []
+  - name: Multi-issue bundle session (anchor SKU)
+    access: other
+    model: subscription
+    model_how: derived
+    units: []
+    periods: []
+  - name: Agent memory — blind locker (commodity slot)
+    access: other
+    model: free
+    model_how: derived
+    units: []
+    periods: []
+  - name: Tier 2 — LLM extras (dispute drafting / coaching)
+    access: other
+    model: unstated
+    model_how: derived
+    units: []
+    periods: []
