@@ -390,6 +390,15 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
     StoreRequestIn:
       properties:
         text:
@@ -411,15 +420,43 @@ components:
       required:
       - text
       title: StoreRequestIn
-    HTTPValidationError:
+    FetchIn:
       properties:
-        detail:
-          items:
-            $ref: '#/components/schemas/ValidationError'
-          type: array
-          title: Detail
+        api_key:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Api Key
+        url:
+          type: string
+          maxLength: 2048
+          title: Url
+          description: http(s) URL to read → markdown
       type: object
-      title: HTTPValidationError
+      required:
+      - url
+      title: FetchIn
+    ParkIn:
+      properties:
+        api_key:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Api Key
+        blob_b64:
+          type: string
+          title: Blob B64
+          description: your ciphertext as base64 — ENCRYPT BEFORE PARKING; the store holds only opaque bytes and cannot read them
+        ttl_seconds:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Ttl Seconds
+          description: requested lifetime; clamped to [60s, 7d]. The effective expires_at is returned — never a silent surprise.
+      type: object
+      required:
+      - blob_b64
+      title: ParkIn
     ValidationError:
       properties:
         loc:
@@ -446,40 +483,3 @@ components:
       - msg
       - type
       title: ValidationError
-    ParkIn:
-      properties:
-        api_key:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Api Key
-        blob_b64:
-          type: string
-          title: Blob B64
-          description: your ciphertext as base64 — ENCRYPT BEFORE PARKING; the store holds only opaque bytes and cannot read them
-        ttl_seconds:
-          anyOf:
-          - type: integer
-          - type: 'null'
-          title: Ttl Seconds
-          description: requested lifetime; clamped to [60s, 7d]. The effective expires_at is returned — never a silent surprise.
-      type: object
-      required:
-      - blob_b64
-      title: ParkIn
-    FetchIn:
-      properties:
-        api_key:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Api Key
-        url:
-          type: string
-          maxLength: 2048
-          title: Url
-          description: http(s) URL to read → markdown
-      type: object
-      required:
-      - url
-      title: FetchIn

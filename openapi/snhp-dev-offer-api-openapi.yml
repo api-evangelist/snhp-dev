@@ -84,257 +84,6 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
-    ProfileRequest:
-      properties:
-        spec:
-          $ref: '#/components/schemas/MenuSpec'
-        state:
-          anyOf:
-          - $ref: '#/components/schemas/StateSpec'
-          - type: 'null'
-      additionalProperties: false
-      type: object
-      required:
-      - spec
-      title: ProfileRequest
-    BuyerSpec:
-      properties:
-        values:
-          additionalProperties:
-            additionalProperties:
-              type: number
-            type: object
-          type: object
-          title: Values
-          description: dim_id -> option_id -> per-unit dollar value
-        qty_decay:
-          type: number
-          maximum: 1.0
-          minimum: 0.0
-          title: Qty Decay
-          description: each extra unit is worth this fraction of the previous
-          default: 0.15
-        outside:
-          type: number
-          maximum: 1000000000.0
-          minimum: 0.0
-          title: Outside
-          description: the buyer's outside-option surplus in dollars
-          default: 0.0
-        balk:
-          type: number
-          maximum: 1.0
-          minimum: 0.0
-          title: Balk
-          description: probability a walk-in is turned away by the queue
-          default: 0.0
-        defer:
-          additionalProperties:
-            type: number
-          type: object
-          title: Defer
-          description: slot_ticks -> dollar cost of waiting for that slot
-      additionalProperties: false
-      type: object
-      title: BuyerSpec
-      description: 'A separable buyer (core/engine.SeparableBuyer): per-option dollar
-
-        values, a quantity-decay ladder, and scalar outside/balk/defer reports.'
-    DepsSpec:
-      properties:
-        valid_on:
-          additionalProperties:
-            items:
-              type: string
-            type: array
-          type: object
-          title: Valid On
-        requires:
-          additionalProperties:
-            items:
-              type: string
-            type: array
-          type: object
-          title: Requires
-        excludes:
-          additionalProperties:
-            items:
-              type: string
-            type: array
-          type: object
-          title: Excludes
-      additionalProperties: false
-      type: object
-      title: DepsSpec
-    QuoteRequest:
-      properties:
-        spec:
-          $ref: '#/components/schemas/MenuSpec'
-        state:
-          anyOf:
-          - $ref: '#/components/schemas/StateSpec'
-          - type: 'null'
-        buyer:
-          $ref: '#/components/schemas/BuyerSpec'
-        config:
-          anyOf:
-          - additionalProperties: true
-            type: object
-          - type: 'null'
-          title: Config
-          description: 'pin dims: dim_id -> option id | [option ids] (addon) | int (quantity). Omit to search every valid cart.'
-        opts:
-          $ref: '#/components/schemas/QuoteOptsSpec'
-      additionalProperties: false
-      type: object
-      required:
-      - spec
-      - buyer
-      title: QuoteRequest
-    HTTPValidationError:
-      properties:
-        detail:
-          items:
-            $ref: '#/components/schemas/ValidationError'
-          type: array
-          title: Detail
-      type: object
-      title: HTTPValidationError
-    QuoteOptsSpec:
-      properties:
-        quote_lookers:
-          type: boolean
-          title: Quote Lookers
-          description: False = refuse buyers who'd never pay list (IC floor)
-          default: true
-        min_price_frac:
-          type: number
-          maximum: 1.0
-          minimum: 0.0
-          title: Min Price Frac
-          description: never quote below this fraction of list
-          default: 0.0
-        qty_appetite:
-          type: boolean
-          title: Qty Appetite
-          description: don't upsell a unit the buyer values below its cost
-          default: false
-        seller_weight:
-          type: number
-          maximum: 1.0
-          minimum: 0.0
-          title: Seller Weight
-          description: 0.5 = symmetric Nash; →1 tilts surplus to the seller
-          default: 0.5
-      additionalProperties: false
-      type: object
-      title: QuoteOptsSpec
-      description: The hosted subset of core/engine.QuoteOpts.
-    MenuSpec:
-      properties:
-        name:
-          type: string
-          maxLength: 120
-          title: Name
-          default: ''
-        dims:
-          items:
-            $ref: '#/components/schemas/DimSpec'
-          type: array
-          maxItems: 8
-          minItems: 1
-          title: Dims
-        deps:
-          $ref: '#/components/schemas/DepsSpec'
-        cost:
-          items:
-            anyOf:
-            - type: string
-            - additionalProperties: true
-              type: object
-          type: array
-          maxItems: 8
-          title: Cost
-      additionalProperties: false
-      type: object
-      required:
-      - dims
-      title: MenuSpec
-      description: 'core.api.build_graph''s declarative spec, validated for hosting.
-
-
-        DUAL-ACCEPT: a body carrying `items` is the FRIENDLY pasted menu (what
-
-        arena/web/yourmenu.js accepts) and is compiled to the raw `dims` spec via
-
-        menu_spec.friendly_to_dims before the hosting checks below run — so the
-
-        hosted engine takes the exact JSON an agent reads off that page. A body
-
-        carrying `dims` is the native spec and passes through untouched.'
-    DimSpec:
-      properties:
-        id:
-          type: string
-          maxLength: 64
-          minLength: 1
-          title: Id
-        kind:
-          type: string
-          title: Kind
-        options:
-          items:
-            $ref: '#/components/schemas/OptionSpec'
-          type: array
-          maxItems: 12
-          title: Options
-        qty_cap:
-          type: integer
-          maximum: 12.0
-          minimum: 1.0
-          title: Qty Cap
-          default: 1
-        negotiable:
-          anyOf:
-          - type: string
-            enum:
-            - free
-            - lever
-            - auto
-          - type: 'null'
-          title: Negotiable
-      additionalProperties: false
-      type: object
-      required:
-      - id
-      - kind
-      title: DimSpec
-    ValidationError:
-      properties:
-        loc:
-          items:
-            anyOf:
-            - type: string
-            - type: integer
-          type: array
-          title: Location
-        msg:
-          type: string
-          title: Message
-        type:
-          type: string
-          title: Error Type
-        input:
-          title: Input
-        ctx:
-          type: object
-          title: Context
-      type: object
-      required:
-      - loc
-      - msg
-      - type
-      title: ValidationError
     OptionSpec:
       properties:
         id:
@@ -389,6 +138,125 @@ components:
       required:
       - id
       title: OptionSpec
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    ProfileRequest:
+      properties:
+        spec:
+          $ref: '#/components/schemas/MenuSpec'
+        state:
+          anyOf:
+          - $ref: '#/components/schemas/StateSpec'
+          - type: 'null'
+      additionalProperties: false
+      type: object
+      required:
+      - spec
+      title: ProfileRequest
+    MenuSpec:
+      properties:
+        name:
+          type: string
+          maxLength: 120
+          title: Name
+          default: ''
+        dims:
+          items:
+            $ref: '#/components/schemas/DimSpec'
+          type: array
+          maxItems: 8
+          minItems: 1
+          title: Dims
+        deps:
+          $ref: '#/components/schemas/DepsSpec'
+        cost:
+          items:
+            anyOf:
+            - type: string
+            - additionalProperties: true
+              type: object
+          type: array
+          maxItems: 8
+          title: Cost
+      additionalProperties: false
+      type: object
+      required:
+      - dims
+      title: MenuSpec
+      description: 'core.api.build_graph''s declarative spec, validated for hosting.
+
+
+        DUAL-ACCEPT: a body carrying `items` is the FRIENDLY pasted menu (what
+
+        arena/web/yourmenu.js accepts) and is compiled to the raw `dims` spec via
+
+        menu_spec.friendly_to_dims before the hosting checks below run — so the
+
+        hosted engine takes the exact JSON an agent reads off that page. A body
+
+        carrying `dims` is the native spec and passes through untouched.'
+    QuoteOptsSpec:
+      properties:
+        quote_lookers:
+          type: boolean
+          title: Quote Lookers
+          description: False = refuse buyers who'd never pay list (IC floor)
+          default: true
+        min_price_frac:
+          type: number
+          maximum: 1.0
+          minimum: 0.0
+          title: Min Price Frac
+          description: never quote below this fraction of list
+          default: 0.0
+        qty_appetite:
+          type: boolean
+          title: Qty Appetite
+          description: don't upsell a unit the buyer values below its cost
+          default: false
+        seller_weight:
+          type: number
+          maximum: 1.0
+          minimum: 0.0
+          title: Seller Weight
+          description: 0.5 = symmetric Nash; →1 tilts surplus to the seller
+          default: 0.5
+      additionalProperties: false
+      type: object
+      title: QuoteOptsSpec
+      description: The hosted subset of core/engine.QuoteOpts.
+    QuoteRequest:
+      properties:
+        spec:
+          $ref: '#/components/schemas/MenuSpec'
+        state:
+          anyOf:
+          - $ref: '#/components/schemas/StateSpec'
+          - type: 'null'
+        buyer:
+          $ref: '#/components/schemas/BuyerSpec'
+        config:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Config
+          description: 'pin dims: dim_id -> option id | [option ids] (addon) | int (quantity). Omit to search every valid cart.'
+        opts:
+          $ref: '#/components/schemas/QuoteOptsSpec'
+      additionalProperties: false
+      type: object
+      required:
+      - spec
+      - buyer
+      title: QuoteRequest
     StateSpec:
       properties:
         tick:
@@ -429,3 +297,135 @@ components:
         fields optional — an omitted state is a neutral shop (no inventory
 
         signals, nothing expiring, unconstrained capacity).'
+    DepsSpec:
+      properties:
+        valid_on:
+          additionalProperties:
+            items:
+              type: string
+            type: array
+          type: object
+          title: Valid On
+        requires:
+          additionalProperties:
+            items:
+              type: string
+            type: array
+          type: object
+          title: Requires
+        excludes:
+          additionalProperties:
+            items:
+              type: string
+            type: array
+          type: object
+          title: Excludes
+      additionalProperties: false
+      type: object
+      title: DepsSpec
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    BuyerSpec:
+      properties:
+        values:
+          additionalProperties:
+            additionalProperties:
+              type: number
+            type: object
+          type: object
+          title: Values
+          description: dim_id -> option_id -> per-unit dollar value
+        qty_decay:
+          type: number
+          maximum: 1.0
+          minimum: 0.0
+          title: Qty Decay
+          description: each extra unit is worth this fraction of the previous
+          default: 0.15
+        outside:
+          type: number
+          maximum: 1000000000.0
+          minimum: 0.0
+          title: Outside
+          description: the buyer's outside-option surplus in dollars
+          default: 0.0
+        balk:
+          type: number
+          maximum: 1.0
+          minimum: 0.0
+          title: Balk
+          description: probability a walk-in is turned away by the queue
+          default: 0.0
+        defer:
+          additionalProperties:
+            type: number
+          type: object
+          title: Defer
+          description: slot_ticks -> dollar cost of waiting for that slot
+      additionalProperties: false
+      type: object
+      title: BuyerSpec
+      description: 'A separable buyer (core/engine.SeparableBuyer): per-option dollar
+
+        values, a quantity-decay ladder, and scalar outside/balk/defer reports.'
+    DimSpec:
+      properties:
+        id:
+          type: string
+          maxLength: 64
+          minLength: 1
+          title: Id
+        kind:
+          type: string
+          title: Kind
+        options:
+          items:
+            $ref: '#/components/schemas/OptionSpec'
+          type: array
+          maxItems: 12
+          title: Options
+        qty_cap:
+          type: integer
+          maximum: 12.0
+          minimum: 1.0
+          title: Qty Cap
+          default: 1
+        negotiable:
+          anyOf:
+          - type: string
+            enum:
+            - free
+            - lever
+            - auto
+          - type: 'null'
+          title: Negotiable
+      additionalProperties: false
+      type: object
+      required:
+      - id
+      - kind
+      title: DimSpec

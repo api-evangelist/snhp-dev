@@ -368,6 +368,15 @@ paths:
       - Par
 components:
   schemas:
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
     SubmitReq:
       properties:
         day:
@@ -401,33 +410,6 @@ components:
       - day
       - user_id
       title: SubmitReq
-    MoveReq:
-      properties:
-        day:
-          type: integer
-          title: Day
-        your_offers:
-          items:
-            type: number
-          type: array
-          maxItems: 100
-          title: Your Offers
-        house_offers:
-          items:
-            type: number
-          type: array
-          maxItems: 100
-          title: House Offers
-          default: []
-        rounds_left:
-          type: integer
-          title: Rounds Left
-      type: object
-      required:
-      - day
-      - your_offers
-      - rounds_left
-      title: MoveReq
     GradeReq:
       properties:
         day:
@@ -442,78 +424,6 @@ components:
       required:
       - day
       title: GradeReq
-    EventReq:
-      properties:
-        user_id:
-          type: string
-          maxLength: 64
-          title: User Id
-        name:
-          type: string
-          maxLength: 32
-          title: Name
-        meta:
-          anyOf:
-          - additionalProperties: true
-            type: object
-          - type: 'null'
-          title: Meta
-      type: object
-      required:
-      - user_id
-      - name
-      title: EventReq
-    JoinReq:
-      properties:
-        group:
-          type: string
-          maxLength: 64
-          title: Group
-        user_id:
-          type: string
-          maxLength: 64
-          title: User Id
-        name:
-          anyOf:
-          - type: string
-            maxLength: 40
-          - type: 'null'
-          title: Name
-      type: object
-      required:
-      - group
-      - user_id
-      title: JoinReq
-    WaitReq:
-      properties:
-        user_id:
-          type: string
-          maxLength: 64
-          title: User Id
-        scenario:
-          type: string
-          maxLength: 64
-          title: Scenario
-        contact:
-          anyOf:
-          - type: string
-            maxLength: 128
-          - type: 'null'
-          title: Contact
-      type: object
-      required:
-      - user_id
-      - scenario
-      title: WaitReq
-    HTTPValidationError:
-      properties:
-        detail:
-          items:
-            $ref: '#/components/schemas/ValidationError'
-          type: array
-          title: Detail
-      type: object
-      title: HTTPValidationError
     AdviseReq:
       properties:
         side:
@@ -550,6 +460,75 @@ components:
       - walk_away
       - target
       title: AdviseReq
+    JoinReq:
+      properties:
+        group:
+          type: string
+          maxLength: 64
+          title: Group
+        user_id:
+          type: string
+          maxLength: 64
+          title: User Id
+        name:
+          anyOf:
+          - type: string
+            maxLength: 40
+          - type: 'null'
+          title: Name
+      type: object
+      required:
+      - group
+      - user_id
+      title: JoinReq
+    MoveReq:
+      properties:
+        day:
+          type: integer
+          title: Day
+        your_offers:
+          items:
+            type: number
+          type: array
+          maxItems: 100
+          title: Your Offers
+        house_offers:
+          items:
+            type: number
+          type: array
+          maxItems: 100
+          title: House Offers
+          default: []
+        rounds_left:
+          type: integer
+          title: Rounds Left
+      type: object
+      required:
+      - day
+      - your_offers
+      - rounds_left
+      title: MoveReq
+    EventReq:
+      properties:
+        user_id:
+          type: string
+          maxLength: 64
+          title: User Id
+        name:
+          type: string
+          maxLength: 32
+          title: Name
+        meta:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Meta
+      type: object
+      required:
+      - user_id
+      - name
+      title: EventReq
     BundleReq:
       properties:
         issues:
@@ -602,3 +581,24 @@ components:
       - msg
       - type
       title: ValidationError
+    WaitReq:
+      properties:
+        user_id:
+          type: string
+          maxLength: 64
+          title: User Id
+        scenario:
+          type: string
+          maxLength: 64
+          title: Scenario
+        contact:
+          anyOf:
+          - type: string
+            maxLength: 128
+          - type: 'null'
+          title: Contact
+      type: object
+      required:
+      - user_id
+      - scenario
+      title: WaitReq

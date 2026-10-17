@@ -107,6 +107,62 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
+    _HelperAskRequest:
+      properties:
+        text:
+          anyOf:
+          - type: string
+            maxLength: 4000
+          - type: 'null'
+          title: Text
+          description: What's going on, in your own words. Optional.
+        situation_key:
+          anyOf:
+          - type: string
+            maxLength: 64
+          - type: 'null'
+          title: Situation Key
+          description: Skip classification and name the situation.
+        values:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Values
+          description: Fields the person has confirmed or corrected. These always beat anything read from their text. At most 40 entries.
+        no_telemetry:
+          type: boolean
+          title: No Telemetry
+          description: Opt out of the anonymous record for this request. Honoured before anything is built, not before it is written.
+          default: false
+      type: object
+      title: _HelperAskRequest
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
     _HelperOutcomeRequest:
       properties:
         receipt:
@@ -141,59 +197,3 @@ components:
           title: Detail
       type: object
       title: HTTPValidationError
-    ValidationError:
-      properties:
-        loc:
-          items:
-            anyOf:
-            - type: string
-            - type: integer
-          type: array
-          title: Location
-        msg:
-          type: string
-          title: Message
-        type:
-          type: string
-          title: Error Type
-        input:
-          title: Input
-        ctx:
-          type: object
-          title: Context
-      type: object
-      required:
-      - loc
-      - msg
-      - type
-      title: ValidationError
-    _HelperAskRequest:
-      properties:
-        text:
-          anyOf:
-          - type: string
-            maxLength: 4000
-          - type: 'null'
-          title: Text
-          description: What's going on, in your own words. Optional.
-        situation_key:
-          anyOf:
-          - type: string
-            maxLength: 64
-          - type: 'null'
-          title: Situation Key
-          description: Skip classification and name the situation.
-        values:
-          anyOf:
-          - additionalProperties: true
-            type: object
-          - type: 'null'
-          title: Values
-          description: Fields the person has confirmed or corrected. These always beat anything read from their text. At most 40 entries.
-        no_telemetry:
-          type: boolean
-          title: No Telemetry
-          description: Opt out of the anonymous record for this request. Honoured before anything is built, not before it is written.
-          default: false
-      type: object
-      title: _HelperAskRequest

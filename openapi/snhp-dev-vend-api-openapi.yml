@@ -69,23 +69,15 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
-    BuyerBlock:
+    HTTPValidationError:
       properties:
-        disclosure:
-          additionalProperties: true
-          type: object
-          title: Disclosure
-          description: '{''utilities'': {sku: $}, ''walk_cost'': $}'
-        peer_proof:
-          anyOf:
-          - additionalProperties: true
-            type: object
-          - type: 'null'
-          title: Peer Proof
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
       type: object
-      required:
-      - disclosure
-      title: BuyerBlock
+      title: HTTPValidationError
     QuoteReq:
       properties:
         protocol:
@@ -102,15 +94,29 @@ components:
       required:
       - intent
       title: QuoteReq
-    HTTPValidationError:
+    Intent:
       properties:
-        detail:
-          items:
-            $ref: '#/components/schemas/ValidationError'
-          type: array
-          title: Detail
+        sku:
+          type: string
+          title: Sku
+        quantity:
+          type: integer
+          maximum: 3.0
+          minimum: 1.0
+          title: Quantity
+          default: 1
+        substitutes_ok:
+          type: boolean
+          title: Substitutes Ok
+          default: true
+        buyer:
+          anyOf:
+          - $ref: '#/components/schemas/BuyerBlock'
+          - type: 'null'
       type: object
-      title: HTTPValidationError
+      required:
+      - sku
+      title: Intent
     ValidationError:
       properties:
         loc:
@@ -137,26 +143,20 @@ components:
       - msg
       - type
       title: ValidationError
-    Intent:
+    BuyerBlock:
       properties:
-        sku:
-          type: string
-          title: Sku
-        quantity:
-          type: integer
-          maximum: 3.0
-          minimum: 1.0
-          title: Quantity
-          default: 1
-        substitutes_ok:
-          type: boolean
-          title: Substitutes Ok
-          default: true
-        buyer:
+        disclosure:
+          additionalProperties: true
+          type: object
+          title: Disclosure
+          description: '{''utilities'': {sku: $}, ''walk_cost'': $}'
+        peer_proof:
           anyOf:
-          - $ref: '#/components/schemas/BuyerBlock'
+          - additionalProperties: true
+            type: object
           - type: 'null'
+          title: Peer Proof
       type: object
       required:
-      - sku
-      title: Intent
+      - disclosure
+      title: BuyerBlock
