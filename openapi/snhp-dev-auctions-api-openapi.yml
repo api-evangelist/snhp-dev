@@ -399,3 +399,9 @@ components:
       - n_bidders
       - seller_valuation
       title: FormatRecRequest
+x-provenance:
+  method: harvested
+  publisher: SNHP
+  source: https://snhp.dev/openapi.json
+  note: split by refine-openapis from the provider's own published document, verified by fetch (openapi/_original/*.fetch.json);
+    stamped by stamp-openapi-provenance.py (roadmap#793)
